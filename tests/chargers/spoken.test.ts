@@ -19,7 +19,7 @@ describe("spokenForPlan (Konzept §6.6)", () => {
     const plan = await planDestination(GASTWERK, { dwellMinutes: 480, returnTripKm: null });
     const text = spokenForPlan(plan, { dwellMinutes: 480, returnTripKm: null }, 0)!;
     expect(text).toContain("direkt am Gastwerk Hotel Hamburg");
-    expect(text).toContain("Reicht ueber Nacht");
+    expect(text).toContain("Reicht über Nacht");
   });
 
   it("weist auf die Radius-Erweiterung hin", async () => {

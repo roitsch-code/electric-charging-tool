@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 export const metadata: Metadata = {
   title: "Ladeplanner",
   description:
-    "Zielzentrierte Ladeplanung fuer E-Autos: Laden am Zielort, nicht auf der Autobahn.",
+    "Zielzentrierte Ladeplanung für E-Autos: Laden am Zielort, nicht auf der Autobahn.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

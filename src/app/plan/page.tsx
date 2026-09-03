@@ -16,9 +16,9 @@ const one = (v: string | string[] | undefined): string | null =>
   Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
 
 const DEMAND_LABEL: Record<DemandClass, string> = {
-  ac_ok: "Aufenthalt lang — Wechselstrom (11 kW) reicht, guenstiger",
+  ac_ok: "Aufenthalt lang — Wechselstrom (11 kW) reicht, günstiger",
   ac_or_dc: "Mittlerer Aufenthalt — Wechselstrom oder Gleichstrom",
-  dc_required: "Kurzer Halt oder weite Rueckfahrt — Schnelllader noetig",
+  dc_required: "Kurzer Halt oder weite Rückfahrt — Schnelllader nötig",
 };
 
 const C = {
@@ -86,9 +86,9 @@ async function Result({
       </h1>
       <p style={{ color: C.muted, marginTop: 0, fontSize: "0.85rem" }}>
         {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
-        {method ? ` · aufgeloest via ${method}` : ""}
+        {method ? ` · aufgelöst via ${method}` : ""}
         {input.dwellMinutes !== null ? ` · Aufenthalt ${input.dwellMinutes} min` : ""}
-        {input.returnTripKm !== null ? ` · Rueckfahrt ${input.returnTripKm} km` : ""}
+        {input.returnTripKm !== null ? ` · Rückfahrt ${input.returnTripKm} km` : ""}
       </p>
 
       <p
@@ -142,9 +142,9 @@ async function Result({
 
       <p style={{ color: C.muted, fontSize: "0.75rem", marginTop: "1.25rem" }}>
         {plan.candidateCount} Kandidat(en) im {plan.usedRadiusM}-m-Umkreis.
-        Verfuegbarkeitsdaten stammen vom Betreiber — ohne Realtime steht
-        „Status unbekannt“. Gehdistanzen sind aus der Luftlinie geschaetzt
-        (Umwegfaktor 1,3), bis echtes Fusswege-Routing angebunden ist.
+        Verfügbarkeitsdaten stammen vom Betreiber — ohne Realtime steht
+        „Status unbekannt“. Gehdistanzen sind aus der Luftlinie geschätzt
+        (Umwegfaktor 1,3), bis echtes Fußwege-Routing angebunden ist.
       </p>
     </>
   );
@@ -193,12 +193,12 @@ function ChargerCard({
         {c.connector === "dc" ? "Gleichstrom" : "Wechselstrom"} ·{" "}
         {capped ? (
           <span>
-            {c.powerKw} kW Saeule, davon <strong style={{ color: C.text }}>{r.usablePowerKw} kW</strong> nutzbar
+            {c.powerKw} kW Säule, davon <strong style={{ color: C.text }}>{r.usablePowerKw} kW</strong> nutzbar
           </span>
         ) : (
           <span>{c.powerKw} kW</span>
         )}{" "}
-        · {c.atDestination ? "direkt am Ziel" : `${r.walkingM} m Fussweg`}
+        · {c.atDestination ? "direkt am Ziel" : `${r.walkingM} m Fußweg`}
       </div>
 
       <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
@@ -206,7 +206,7 @@ function ChargerCard({
           Hinfahren
         </a>
         <a href={walkFromChargerUrl(c, dest)} style={btn(C.card2)}>
-          Fussweg zum Ziel
+          Fußweg zum Ziel
         </a>
       </div>
     </div>
@@ -237,7 +237,7 @@ function ManualFallback({ hint, reason }: { hint?: string; reason?: string }) {
     <section style={{ marginTop: "1.5rem" }}>
       <h1 style={{ fontSize: "1.4rem" }}>Ziel manuell eingeben</h1>
       <p style={{ color: C.muted, fontSize: "0.9rem" }}>
-        Die automatische Aufloesung ist fehlgeschlagen ({reason ?? "unbekannt"}).
+        Die automatische Auflösung ist fehlgeschlagen ({reason ?? "unbekannt"}).
         Das ist der eingeplante Stufe-3-Fallback (Konzept §4).
       </p>
       <form method="get" action="/plan" style={{ marginTop: "1rem" }}>
@@ -249,7 +249,7 @@ function ManualFallback({ hint, reason }: { hint?: string; reason?: string }) {
         />
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
           <input name="dwell" placeholder="Dauer (kurz/paar/nacht)" style={inputStyle} />
-          <input name="return" placeholder="Rueckfahrt km" style={inputStyle} />
+          <input name="return" placeholder="Rückfahrt km" style={inputStyle} />
         </div>
         <button type="submit" style={{ ...btn(C.accent), marginTop: 10, border: "none", cursor: "pointer" }}>
           Planen
@@ -268,19 +268,19 @@ function DemoLinks() {
       <ul style={{ lineHeight: 1.9, fontSize: "0.9rem" }}>
         <li>
           <Link href="/plan?lat=53.5510&lng=9.9215&name=Gastwerk%20Hotel%20Hamburg&dwell=nacht" style={{ color: C.accent }}>
-            Gastwerk Hotel, ueber Nacht
+            Gastwerk Hotel, über Nacht
           </Link>{" "}
           <span style={{ color: C.muted }}>→ AC am Ziel gewinnt</span>
         </li>
         <li>
           <Link href="/plan?lat=53.5510&lng=9.9215&name=Gastwerk%20Hotel%20Hamburg&dwell=kurz&return=300" style={{ color: C.accent }}>
-            Gastwerk Hotel, kurzer Halt + 300 km zurueck
+            Gastwerk Hotel, kurzer Halt + 300 km zurück
           </Link>{" "}
           <span style={{ color: C.muted }}>→ Schnelllader gewinnt</span>
         </li>
         <li>
           <Link href="/plan?lat=53.2000&lng=7.5000&name=Landgasthof&dwell=paar" style={{ color: C.accent }}>
-            Laendliches Ziel
+            Ländliches Ziel
           </Link>{" "}
           <span style={{ color: C.muted }}>→ Radius-Erweiterung</span>
         </li>

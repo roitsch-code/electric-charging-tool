@@ -20,14 +20,14 @@ const ZERO_TO_TWELVE = [
   "zwei",
   "drei",
   "vier",
-  "fuenf",
+  "fünf",
   "sechs",
   "sieben",
   "acht",
   "neun",
   "zehn",
   "elf",
-  "zwoelf",
+  "zwölf",
 ];
 
 function spellCount(n: number): string {
@@ -73,14 +73,14 @@ function assessment(top: RankedCharger, input: PlanInput): string {
   const longReturn = (input.returnTripKm ?? 0) > 150;
 
   if ((demandDc || longReturn) && !isDc) {
-    return "Nur langsame Wechselstrom-Ladung, fuer den kurzen Halt zu wenig.";
+    return "Nur langsame Wechselstrom-Ladung, für den kurzen Halt zu wenig.";
   }
-  if (longReturn && isDc) return "Schnelllader, reicht fuer die Rueckfahrt.";
-  if (demandDc && isDc) return "Schnelllader, passt fuer den kurzen Halt.";
+  if (longReturn && isDc) return "Schnelllader, reicht für die Rückfahrt.";
+  if (demandDc && isDc) return "Schnelllader, passt für den kurzen Halt.";
   if (input.dwellMinutes !== null && input.dwellMinutes > 360) {
-    return "Reicht ueber Nacht.";
+    return "Reicht über Nacht.";
   }
-  return "Reicht fuer ein paar Stunden.";
+  return "Reicht für ein paar Stunden.";
 }
 
 /**
@@ -104,7 +104,7 @@ export function spokenForPlan(
   const verdict = assessment(top, input);
 
   const expandedNote = result.expanded
-    ? ` Naechster Punkt erst im erweiterten Umkreis von ${Math.round(
+    ? ` Nächster Punkt erst im erweiterten Umkreis von ${Math.round(
         result.usedRadiusM / 1000,
       )} Kilometern.`
     : "";

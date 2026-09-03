@@ -3,7 +3,7 @@ export default function Home() {
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "3rem 1.25rem" }}>
       <h1 style={{ fontSize: "1.9rem", marginBottom: "0.25rem" }}>Ladeplanner</h1>
       <p style={{ color: "#9aa2ac", marginTop: 0 }}>
-        Zielzentrierte Ladeplanung fuer E-Autos. Laden am Zielort, nicht auf der
+        Zielzentrierte Ladeplanung für E-Autos. Laden am Zielort, nicht auf der
         Autobahn.
       </p>
 
@@ -26,7 +26,7 @@ export default function Home() {
               href="/plan?lat=53.5510&lng=9.9215&name=Gastwerk%20Hotel%20Hamburg&dwell=nacht"
               style={{ color: "#4ea1ff" }}
             >
-              Gastwerk Hotel Hamburg — ueber Nacht
+              Gastwerk Hotel Hamburg — über Nacht
             </a>
           </li>
           <li>
@@ -34,7 +34,7 @@ export default function Home() {
               href="/plan?lat=53.5510&lng=9.9215&name=Gastwerk%20Hotel%20Hamburg&dwell=kurz&return=300"
               style={{ color: "#4ea1ff" }}
             >
-              Gastwerk Hotel Hamburg — kurzer Halt, 300 km Rueckfahrt
+              Gastwerk Hotel Hamburg — kurzer Halt, 300 km Rückfahrt
             </a>
           </li>
           <li>
@@ -42,7 +42,7 @@ export default function Home() {
               href="/plan?lat=53.2000&lng=7.5000&name=Landgasthof&dwell=paar"
               style={{ color: "#4ea1ff" }}
             >
-              Laendliches Ziel — Radius-Erweiterung
+              Ländliches Ziel — Radius-Erweiterung
             </a>
           </li>
         </ul>
