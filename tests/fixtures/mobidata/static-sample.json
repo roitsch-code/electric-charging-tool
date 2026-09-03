@@ -1,0 +1,354 @@
+{
+  "payload": {
+    "aegiEnergyInfrastructureTablePublication": {
+      "energyInfrastructureTable": [
+        {
+          "idG": "1",
+          "versionG": "1",
+          "energyInfrastructureSite": [
+            {
+              "idG": "1002913",
+              "versionG": "2026-08-18T13:28:10.943773+00:00",
+              "operatingHours": {
+                "afacOpenAllHours": {}
+              },
+              "locationReference": {
+                "locPointLocation": {
+                  "locLocationExtensionG": {
+                    "FacilityLocation": {
+                      "address": {
+                        "postcode": "44532",
+                        "city": {
+                          "values": [
+                            {
+                              "lang": "de",
+                              "value": "Lünen"
+                            }
+                          ]
+                        },
+                        "countryCode": "DE",
+                        "addressLine": [
+                          {
+                            "order": 1,
+                            "type": {
+                              "value": "street"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "Viktoriastr."
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "order": 2,
+                            "type": {
+                              "value": "houseNumber"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "5"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "locAreaLocation": {
+                  "coordinatesForDisplay": {
+                    "latitude": 51.608953,
+                    "longitude": 7.522998
+                  }
+                }
+              },
+              "operator": {
+                "afacAnOrganisation": {
+                  "name": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Stadtwerke Lünen Infrastrukturbau GmbH"
+                      }
+                    ]
+                  }
+                }
+              },
+              "energyInfrastructureStation": [
+                {
+                  "idG": "1002913",
+                  "versionG": "2026-08-18T13:28:10.943773+00:00",
+                  "totalMaximumPower": 22,
+                  "authenticationAndIdentificationMethods": [
+                    {
+                      "value": "nfc"
+                    },
+                    {
+                      "value": "debitCard"
+                    },
+                    {
+                      "value": "overTheAir"
+                    },
+                    {
+                      "value": "rfid"
+                    }
+                  ],
+                  "numberOfRefillPoints": 2,
+                  "serviceType": [
+                    {
+                      "serviceType": {
+                        "value": "unattended"
+                      }
+                    }
+                  ],
+                  "refillPoint": [
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1002913*1",
+                        "versionG": "2026-08-18T13:28:10.930200+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          11000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 11000,
+                            "voltage": 400,
+                            "maximumCurrent": 32
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1002913*2",
+                        "versionG": "2026-08-18T13:28:10.943773+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          11000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 11000,
+                            "voltage": 400,
+                            "maximumCurrent": 32
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "idG": "1002915",
+              "versionG": "2026-08-18T13:28:11.264125+00:00",
+              "operatingHours": {
+                "afacOpenAllHours": {}
+              },
+              "locationReference": {
+                "locPointLocation": {
+                  "locLocationExtensionG": {
+                    "FacilityLocation": {
+                      "address": {
+                        "postcode": "44536",
+                        "city": {
+                          "values": [
+                            {
+                              "lang": "de",
+                              "value": "Lünen"
+                            }
+                          ]
+                        },
+                        "countryCode": "DE",
+                        "addressLine": [
+                          {
+                            "order": 1,
+                            "type": {
+                              "value": "street"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "Stellenbachstr."
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "order": 2,
+                            "type": {
+                              "value": "houseNumber"
+                            },
+                            "text": {
+                              "values": [
+                                {
+                                  "lang": "de",
+                                  "value": "49-51"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "locAreaLocation": {
+                  "coordinatesForDisplay": {
+                    "latitude": 51.606021,
+                    "longitude": 7.459233
+                  }
+                }
+              },
+              "operator": {
+                "afacAnOrganisation": {
+                  "name": {
+                    "values": [
+                      {
+                        "lang": "de",
+                        "value": "Stadtwerke Lünen Infrastrukturbau GmbH"
+                      }
+                    ]
+                  }
+                }
+              },
+              "energyInfrastructureStation": [
+                {
+                  "idG": "1002915",
+                  "versionG": "2026-08-18T13:28:11.264125+00:00",
+                  "totalMaximumPower": 22,
+                  "authenticationAndIdentificationMethods": [
+                    {
+                      "value": "nfc"
+                    },
+                    {
+                      "value": "debitCard"
+                    },
+                    {
+                      "value": "overTheAir"
+                    },
+                    {
+                      "value": "rfid"
+                    }
+                  ],
+                  "numberOfRefillPoints": 2,
+                  "serviceType": [
+                    {
+                      "serviceType": {
+                        "value": "unattended"
+                      }
+                    }
+                  ],
+                  "refillPoint": [
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1002915*1",
+                        "versionG": "2026-08-18T13:28:11.257172+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          11000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 11000,
+                            "voltage": 400,
+                            "maximumCurrent": 32
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "aegiElectricChargingPoint": {
+                        "idG": "BNETZA*1002915*2",
+                        "versionG": "2026-08-18T13:28:11.264125+00:00",
+                        "deliveryUnit": {
+                          "value": "kWh"
+                        },
+                        "currentType": {
+                          "value": "ac"
+                        },
+                        "numberOfConnectors": 1,
+                        "availableVoltage": [
+                          400
+                        ],
+                        "availableChargingPower": [
+                          11000
+                        ],
+                        "connector": [
+                          {
+                            "connectorType": {
+                              "value": "iec62196T2"
+                            },
+                            "connectorFormat": {
+                              "value": "socket"
+                            },
+                            "maxPowerAtSocket": 11000,
+                            "voltage": 400,
+                            "maximumCurrent": 32
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

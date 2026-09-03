@@ -1,0 +1,85 @@
+{
+  "payload": {
+    "aegiEnergyInfrastructureStatusPublication": {
+      "publicationTime": "2026-09-03T21:48:07.869655+00:00",
+      "energyInfrastructureSiteStatus": [
+        {
+          "reference": {
+            "idG": "x"
+          },
+          "energyInfrastructureStationStatus": [
+            {
+              "refillPointStatus": [
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "BNETZA*1077306*1",
+                      "versionG": "2026-08-18T13:58:49.313751+00:00"
+                    },
+                    "lastUpdated": "2026-08-18T13:58:49.313751+00:00",
+                    "status": {
+                      "value": "inoperative"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "DE*SHN*E0030172",
+                      "versionG": "2026-09-02T16:52:20.590000+00:00"
+                    },
+                    "lastUpdated": "2026-09-03T01:00:06.777075+00:00",
+                    "status": {
+                      "value": "available"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "DE*SHN*E0030039",
+                      "versionG": "2026-09-02T16:52:09.410000+00:00"
+                    },
+                    "lastUpdated": "2026-09-03T01:00:07.559824+00:00",
+                    "status": {
+                      "value": "charging"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "DE*SHN*E0030009",
+                      "versionG": "2026-09-02T23:40:42.542000+00:00"
+                    },
+                    "lastUpdated": "2026-09-03T01:00:07.436087+00:00",
+                    "status": {
+                      "value": "outOfOrder"
+                    }
+                  }
+                },
+                {
+                  "aegiRefillPointStatus": {
+                    "reference": {
+                      "targetClass": "FacilityObject",
+                      "idG": "CH*CCI*E22079",
+                      "versionG": "2026-09-03T01:00:30.400022+00:00"
+                    },
+                    "lastUpdated": "2026-09-03T01:00:30.400022+00:00",
+                    "status": {
+                      "value": "unknown"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

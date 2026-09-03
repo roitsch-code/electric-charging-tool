@@ -16,7 +16,7 @@ Dies ist ein bewusstes **n=1-Projekt** (kein Multi-User, keine Skalierung).
 | **M1** | Resolver: `maps.app.goo.gl` → Koordinaten, drei Stufen, Fixtures | ✅ |
 | **M3** | Ranking (§8) + Ergebnisseite mit Top 3, Sprechtext, Deeplinks (Seed-Daten) | ✅ |
 | **M2** | Datenimport (BNetzA + OCM) + PostGIS-Umkreissuche, austauschbare Quelle | ✅ (Code; DB-Aktivierung s. u.) |
-| M4 | Realtime + Push (MobiData-BW-Poller, ntfy) | offen |
+| **M4** | Realtime (MobiData BW) + ntfy-Push, Cron-Endpunkte | ✅ (Code; live gegen echten Feed getestet) |
 | M5 | ETA + Trigger (Directions API, Siri/CarPlay/Bluetooth, Pings) | offen |
 | M6 | Freihaendig (Sprechtext, Vorlesen, drei Siri-Kurzbefehle) | offen |
 | M7 | Echttest Emmerich → Hamburg | offen |
@@ -136,6 +136,40 @@ OCM_API_KEY=… npm run import:ocm -- --country DE # optional, Key nötig
 ```
 
 Parser vorab offline prüfen (ohne DB): `npm run import:bnetza -- <csv> --dry`.
+
+## Realtime + Push (M4)
+
+- **Realtime** (`src/lib/realtime/mobidata.ts`): Client für den öffentlichen
+  MobiData-BW-Feed (DATEX II v3.5, kein Key). `mapDatexStatus` normalisiert
+  `available/charging/outOfOrder/inoperative/unknown` → interne Status. Live
+  gegen den echten Endpunkt getestet.
+- **OCPDB-Static** (`src/lib/import/ocpdb.ts`): statischer Bestand aus
+  **derselben** Quelle wie der Realtime-Feed — nur so passen die EVSE-IDs
+  zusammen (die IDs mischen `BNETZA*…` und echte OCPI-IDs). Für BW ist das die
+  realtime-fähige Quelle; BNetzA-CSV/OCM bleiben für Abdeckung ohne Realtime.
+- **Push** (`src/lib/notify/`): `ntfy.ts` (Titel ASCII, deutscher Sprechsatz im
+  Body, Deeplinks als Action-Buttons), `timing.ts` (Vorlauf nach §3:
+  5/10/15 min), `message.ts` (baut Push aus einem Plan).
+- **Cron** (`vercel.json` + `src/app/api/cron/`): `/api/cron/poll` schreibt die
+  Verfügbarkeit in die DB (nur zu bekannten Ladepunkten, §5.1);
+  `/api/cron/dispatch` verschickt fällige Pushes (`notify_at` erreicht).
+  Optionaler Schutz über `CRON_SECRET`.
+
+### Aktivieren (nach dem DB-Setup oben)
+
+```bash
+# statischen BW-Bestand mit realtime-kompatiblen IDs laden
+npm run import:ocpdb            # oder --dry (nur parsen, ohne DB)
+# Verfügbarkeit einmalig ziehen (Cron macht das dann automatisch)
+npm run poll:realtime          # oder --dry
+# Push scharf schalten:
+#   NTFY_TOPIC in Vercel setzen, ntfy-App das Topic abonnieren
+#   iOS: Mitteilungen ankündigen -> ntfy aktivieren  (siehe docs/shortcuts.md)
+```
+
+Offline-Check ganz ohne DB: `npm run import:ocpdb -- --dry` und
+`npm run poll:realtime -- --dry` holen den echten Feed und zeigen die
+geparsten Daten. iPhone-Seite (Kurzbefehle, Vorlesen): **`docs/shortcuts.md`**.
 
 ## API
 
