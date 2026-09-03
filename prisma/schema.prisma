@@ -1,0 +1,124 @@
+// Ladeplanner — Datenmodell (Konzept §9)
+// Postgres; PostGIS-Umkreissuche kommt in M2 als raw query dazu.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Wie eine geteilte Share-URL zu Koordinaten aufgeloest wurde.
+enum ResolutionMethod {
+  redirect
+  geocode
+  manual
+}
+
+/// Wodurch der Fahrtstart ausgeloest wurde (Konzept §6.4).
+enum StartTrigger {
+  carplay
+  bluetooth
+  siri
+}
+
+/// Lebenszyklus eines Trips (Konzept §9).
+enum TripStatus {
+  planned
+  driving
+  notified
+  diverted
+  done
+}
+
+/// Ein geteiltes Ziel plus geplante Benachrichtigung.
+model Trip {
+  id               String            @id @default(cuid())
+  createdAt        DateTime          @default(now()) @map("created_at")
+  rawShareUrl      String            @map("raw_share_url")
+  resolvedLat      Float?            @map("resolved_lat")
+  resolvedLng      Float?            @map("resolved_lng")
+  resolvedName     String?           @map("resolved_name")
+  resolutionMethod ResolutionMethod? @map("resolution_method")
+  dwellMinutes     Int?              @map("dwell_minutes")
+  returnTripKm     Int?              @map("return_trip_km")
+  startedAt        DateTime?         @map("started_at")
+  startTrigger     StartTrigger?     @map("start_trigger")
+  eta              DateTime?
+  etaUpdatedAt     DateTime?         @map("eta_updated_at")
+  notifyAt         DateTime?         @map("notify_at")
+  notifiedAt       DateTime?         @map("notified_at")
+  status           TripStatus        @default(planned)
+
+  pings           TripPing[]
+  recommendations Recommendation[]
+
+  @@index([status])
+  @@index([notifyAt])
+  @@map("trips")
+}
+
+/// Standort-Ping zur ETA-Korrektur unterwegs (Konzept §6.5).
+model TripPing {
+  id              String   @id @default(cuid())
+  tripId          String   @map("trip_id")
+  lat             Float
+  lng             Float
+  receivedAt      DateTime @default(now()) @map("received_at")
+  recalculatedEta DateTime? @map("recalculated_eta")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("trip_pings")
+}
+
+/// Zuletzt empfohlener Ladepunkt, Basis fuer die Sprachbefehle (Konzept §6.6).
+model Recommendation {
+  id         String   @id @default(cuid())
+  tripId     String   @map("trip_id")
+  rank       Int
+  evseId     String   @map("evse_id")
+  walkingM   Int      @map("walking_m")
+  spokenText String   @map("spoken_text")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("recommendations")
+}
+
+/// Statischer Cache der Ladeinfrastruktur (BNetzA + OCM), Konzept §5.1.
+model Chargepoint {
+  id            String   @id @default(cuid())
+  evseId        String   @unique @map("evse_id")
+  lat           Float
+  lng           Float
+  operator      String?
+  powerKw       Float?   @map("power_kw")
+  connectorType String?  @map("connector_type")
+  address       String?
+  source        String
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  status ChargepointStatus?
+
+  @@index([lat, lng])
+  @@map("chargepoints")
+}
+
+/// Dynamischer Verfuegbarkeitsstatus (AFIR-Realtime), Konzept §5.1.
+model ChargepointStatus {
+  evseId      String   @id @map("evse_id")
+  status      String
+  lastUpdated DateTime @map("last_updated")
+  source      String
+
+  chargepoint Chargepoint @relation(fields: [evseId], references: [evseId], onDelete: Cascade)
+
+  @@map("chargepoint_status")
+}

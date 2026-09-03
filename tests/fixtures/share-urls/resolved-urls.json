@@ -1,0 +1,72 @@
+[
+  {
+    "id": "place-with-viewport-and-pin",
+    "note": "Standardfall: /place/ + /@ + data-Pin. Pin (!3d!4d) hat Vorrang.",
+    "url": "https://www.google.com/maps/place/Gastwerk+Hotel+Hamburg/@53.5503,9.9200,17z/data=!3m1!4b1!4m9!3m8!1s0x47b18f0e:0x123!5m2!4m1!1i2!8m2!3d53.5510!4d9.9215",
+    "expectCoords": { "lat": 53.551, "lng": 9.9215 },
+    "expectName": "Gastwerk Hotel Hamburg"
+  },
+  {
+    "id": "place-viewport-only",
+    "note": "Nur Viewport /@, kein data-Pin.",
+    "url": "https://www.google.com/maps/place/Rheinpromenade+Emmerich/@51.8342,6.2456,16z",
+    "expectCoords": { "lat": 51.8342, "lng": 6.2456 },
+    "expectName": "Rheinpromenade Emmerich"
+  },
+  {
+    "id": "data-pin-only",
+    "note": "Nur data-Pin, kein /@ im Pfad.",
+    "url": "https://www.google.com/maps/place/Restaurant+Zur+Post/data=!4m2!3m1!1s0x0:0xabc!8m2!3d48.1372!4d11.5756",
+    "expectCoords": { "lat": 48.1372, "lng": 11.5756 },
+    "expectName": "Restaurant Zur Post"
+  },
+  {
+    "id": "search-api-query-latlng",
+    "note": "Maps-API search-URL mit query=lat,lng.",
+    "url": "https://www.google.com/maps/search/?api=1&query=52.520008%2C13.404954",
+    "expectCoords": { "lat": 52.520008, "lng": 13.404954 },
+    "expectName": null
+  },
+  {
+    "id": "q-param-latlng",
+    "note": "Aeltere URL mit ?q=lat,lng.",
+    "url": "https://maps.google.com/?q=50.9375,6.9603",
+    "expectCoords": { "lat": 50.9375, "lng": 6.9603 },
+    "expectName": null
+  },
+  {
+    "id": "ll-param",
+    "note": "?ll=lat,lng als Kartenzentrum.",
+    "url": "https://www.google.com/maps?ll=48.7758,9.1829&z=15",
+    "expectCoords": { "lat": 48.7758, "lng": 9.1829 },
+    "expectName": null
+  },
+  {
+    "id": "dir-destination-latlng",
+    "note": "Directions-Deeplink mit destination=lat,lng.",
+    "url": "https://www.google.com/maps/dir/?api=1&destination=53.5503%2C9.9200&travelmode=driving",
+    "expectCoords": { "lat": 53.5503, "lng": 9.92 },
+    "expectName": null
+  },
+  {
+    "id": "place-name-no-coords",
+    "note": "Nur /place/Name, keine Koordinaten -> Stufe 2 (Geocoding).",
+    "url": "https://www.google.com/maps/place/Kurhaus+Baden-Baden",
+    "expectCoords": null,
+    "expectName": "Kurhaus Baden-Baden"
+  },
+  {
+    "id": "q-name-no-coords",
+    "note": "?q=Name ohne Koordinaten -> Stufe 2 (Geocoding).",
+    "url": "https://www.google.com/maps?q=Hafenspitze+Duesseldorf",
+    "expectCoords": null,
+    "expectName": "Hafenspitze Duesseldorf"
+  },
+  {
+    "id": "opaque-consent-no-signal",
+    "note": "Consent-/Redirect-URL ohne Koordinaten und ohne Namen -> Stufe 3 (manuell).",
+    "url": "https://consent.google.com/m?continue=https://www.google.com/maps&gl=DE",
+    "expectCoords": null,
+    "expectName": null
+  }
+]

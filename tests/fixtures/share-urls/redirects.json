@@ -1,0 +1,23 @@
+[
+  {
+    "id": "redirect-to-coords",
+    "note": "Kurz-URL loest per Redirect direkt auf Koordinaten auf (Stufe 1).",
+    "shortUrl": "https://maps.app.goo.gl/AAAA1111",
+    "finalUrl": "https://www.google.com/maps/place/Gastwerk+Hotel+Hamburg/@53.5503,9.9200,17z/data=!4m6!3m5!1s0x47b18f0e:0x123!8m2!3d53.5510!4d9.9215",
+    "expect": { "ok": true, "lat": 53.551, "lng": 9.9215, "method": "redirect", "name": "Gastwerk Hotel Hamburg" }
+  },
+  {
+    "id": "redirect-to-name-only",
+    "note": "Redirect liefert nur einen Namen -> Stufe 2 (Geocoding).",
+    "shortUrl": "https://maps.app.goo.gl/BBBB2222",
+    "finalUrl": "https://www.google.com/maps/place/Kurhaus+Baden-Baden",
+    "expect": { "ok": true, "method": "geocode", "name": "Kurhaus Baden-Baden" }
+  },
+  {
+    "id": "redirect-to-opaque",
+    "note": "Redirect liefert nichts Brauchbares -> Stufe 3 (manuell).",
+    "shortUrl": "https://maps.app.goo.gl/CCCC3333",
+    "finalUrl": "https://consent.google.com/m?continue=https://www.google.com/maps&gl=DE",
+    "expect": { "ok": false, "needsManualInput": true }
+  }
+]
