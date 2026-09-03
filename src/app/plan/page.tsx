@@ -6,6 +6,7 @@ import {
   walkFromChargerUrl,
   type RankedCharger,
 } from "@/lib/chargers";
+import { getChargerSource } from "@/lib/chargers/source-factory";
 import { parsePlanInput, resolveDestination } from "@/lib/planRequest";
 import type { DemandClass } from "@/lib/vehicle";
 
@@ -76,7 +77,7 @@ async function Result({
   method?: string;
   input: ReturnType<typeof parsePlanInput>;
 }) {
-  const plan = await planDestination(coords, input);
+  const plan = await planDestination(coords, input, getChargerSource());
   const spoken = spokenForPlan(plan, input, 0);
 
   return (

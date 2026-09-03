@@ -15,7 +15,7 @@ Dies ist ein bewusstes **n=1-Projekt** (kein Multi-User, keine Skalierung).
 | **M0** | Scaffold: Next.js + TypeScript + Prisma, CI (Lint/Typecheck/Vitest) | ✅ |
 | **M1** | Resolver: `maps.app.goo.gl` → Koordinaten, drei Stufen, Fixtures | ✅ |
 | **M3** | Ranking (§8) + Ergebnisseite mit Top 3, Sprechtext, Deeplinks (Seed-Daten) | ✅ |
-| M2 | Statischer Datenbestand (BNetzA + OCM, PostGIS-Umkreissuche) | offen |
+| **M2** | Datenimport (BNetzA + OCM) + PostGIS-Umkreissuche, austauschbare Quelle | ✅ (Code; DB-Aktivierung s. u.) |
 | M4 | Realtime + Push (MobiData-BW-Poller, ntfy) | offen |
 | M5 | ETA + Trigger (Directions API, Siri/CarPlay/Bluetooth, Pings) | offen |
 | M6 | Freihaendig (Sprechtext, Vorlesen, drei Siri-Kurzbefehle) | offen |
@@ -98,6 +98,44 @@ gleichzeitig als zu langsam bezeichnen. Siehe `PRIORITY_MIN_CLASS` in
 
 Datenquelle in M3 ist ein Seed im Speicher (`src/lib/chargers/seed.ts`),
 austauschbar gegen die PostGIS-Suche in M2 (gleiches `ChargerSource`-Interface).
+
+## Echter Datenbestand (M2)
+
+Import und Umkreissuche liegen fertig vor; aktiviert wird über eine DB und
+eine Umgebungsvariable.
+
+- **Import** (`src/lib/import/`): tolerante Parser für das **BNetzA-Ladesäulen­
+  register** (CSV, Semikolon, Dezimalkomma, Vorspann-Zeilen, Spalten per Name)
+  und **Open Charge Map** (JSON-API). Beide normalisieren auf `Charger`
+  (AC/DC-Ableitung, stabile EVSE-IDs, Adresse). Upsert je `evse_id`.
+- **Suche** (`src/lib/chargers/postgis-source.ts`): `ST_DWithin` auf einer
+  inline aus lat/lng gebildeten geography; optionaler funktionaler GIST-Index
+  (`prisma/sql/postgis.sql`). Gleiche `ChargerSource`-Schnittstelle wie der Seed.
+- **Umschalten**: `getChargerSource()` (`source-factory.ts`) nimmt PostGIS nur,
+  wenn `CHARGER_SOURCE=postgis` gesetzt ist — sonst weiter Seed.
+
+### DB aktivieren — Schritt für Schritt
+
+```bash
+# 1. DATABASE_URL (Neon o. Ä.) in .env eintragen
+cp .env.example .env   # DATABASE_URL setzen
+
+# 2. Tabellen anlegen
+npm run db:push
+
+# 3. PostGIS-Extension + GIST-Index (einmalig; braucht psql)
+npm run db:postgis     # = psql "$DATABASE_URL" -f prisma/sql/postgis.sql
+
+# 4. Daten importieren
+npm run import:bnetza -- ./ladesaeulen.csv      # CSV vorher manuell laden
+OCM_API_KEY=… npm run import:ocm -- --country DE # optional, Key nötig
+
+# 5. App auf die DB umstellen
+#    lokal:  CHARGER_SOURCE=postgis npm run dev
+#    Vercel: CHARGER_SOURCE=postgis als Env-Var setzen
+```
+
+Parser vorab offline prüfen (ohne DB): `npm run import:bnetza -- <csv> --dry`.
 
 ## API
 

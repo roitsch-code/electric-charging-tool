@@ -13,7 +13,11 @@ export interface Charger {
   operator?: string;
   powerKw: number;
   connector: Connector;
+  /** Freitext-Steckertyp(en) aus der Quelle, nur zur Anzeige. */
+  connectorType?: string;
   address?: string;
+  /** Herkunft des Datensatzes: "bnetza" | "ocm" | "seed" | … */
+  source?: string;
   /** Steht der Punkt direkt am Ziel-POI (gleiche Adresse)? Konzept §8, Schritt 3. */
   atDestination?: boolean;
   status?: ChargerStatus;

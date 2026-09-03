@@ -1,0 +1,9 @@
+Bundesnetzagentur;Ladesäulenregister;Stand 01.09.2026
+Hinweis: Diese Datei enthält öffentlich zugängliche Ladeeinrichtungen.
+Weitere Vorspann-Zeile ohne Spaltenüberschriften
+Betreiber;Straße;Hausnummer;Adresszusatz;Postleitzahl;Ort;Bundesland;Kreis/kreisfreie Stadt;Breitengrad;Längengrad;Inbetriebnahmedatum;Nennleistung Ladeeinrichtung [kW];Art der Ladeeinrichtung;Anzahl Ladepunkte;Steckertypen1;P1 [kW];Public Key1
+Aral Aktiengesellschaft;Gaswerkstraße;1;;22761;Hamburg;Hamburg;Hamburg;53,5525;9,9215;01.06.2022;150,00;Schnellladeeinrichtung;2;"AC Steckdose Typ 2, DC Kupplung Combo";150,00;abc123
+Stadtwerke Musterstadt;Dorfstraße;5;;49751;Sögel;Niedersachsen;Emsland;53,2135;7,5000;15.03.2021;22,00;Normalladeeinrichtung;2;AC Steckdose Typ 2;22,00;def456
+Lidl E-Charge;Bahrenfelder Chaussee;10;;22761;Hamburg;Hamburg;Hamburg;53,5545;9,9190;10.10.2023;11,00;Normalladeeinrichtung;1;AC Steckdose Typ 2;11,00;ghi789
+;;;;;;;;;;;;;;;;
+EnBW mobility+;Am Kurhaus;3;;76530;Baden-Baden;Baden-Württemberg;Baden-Baden;48,7606;8,2396;20.01.2024;300,00;Schnellladeeinrichtung;4;DC Kupplung Combo;300,00;jkl012

@@ -1,0 +1,73 @@
+[
+  {
+    "ID": 123456,
+    "UUID": "AAAA-BBBB",
+    "AddressInfo": {
+      "Title": "Rathaus Tiefgarage",
+      "AddressLine1": "Marktplatz 1",
+      "Town": "Freiburg",
+      "Postcode": "79098",
+      "Latitude": 47.9959,
+      "Longitude": 7.8494
+    },
+    "OperatorInfo": { "Title": "badenova" },
+    "StatusType": { "IsOperational": true },
+    "Connections": [
+      {
+        "PowerKW": 22,
+        "ConnectionType": { "Title": "Type 2 (Socket Only)" },
+        "CurrentType": { "Title": "AC (Three-Phase)" },
+        "Level": { "IsFastChargeCapable": false }
+      }
+    ]
+  },
+  {
+    "ID": 234567,
+    "AddressInfo": {
+      "Title": "Autohof Schnelllader",
+      "AddressLine1": "A5 Raststätte",
+      "Town": "Offenburg",
+      "Postcode": "77656",
+      "Latitude": 48.4711,
+      "Longitude": 7.9408
+    },
+    "OperatorInfo": { "Title": "EnBW" },
+    "StatusType": { "IsOperational": true },
+    "Connections": [
+      {
+        "PowerKW": 300,
+        "ConnectionType": { "Title": "CCS (Type 2 Combo)" },
+        "CurrentType": { "Title": "DC" },
+        "Level": { "IsFastChargeCapable": true }
+      },
+      {
+        "PowerKW": 50,
+        "ConnectionType": { "Title": "CHAdeMO" },
+        "CurrentType": { "Title": "DC" }
+      }
+    ]
+  },
+  {
+    "ID": 345678,
+    "AddressInfo": {
+      "Title": "Ohne Koordinaten",
+      "Latitude": null,
+      "Longitude": null
+    },
+    "Connections": []
+  },
+  {
+    "ID": 456789,
+    "AddressInfo": {
+      "Title": "Defekte Station",
+      "Town": "Karlsruhe",
+      "Latitude": 49.0069,
+      "Longitude": 8.4037
+    },
+    "OperatorInfo": { "Title": "Stadtwerke" },
+    "StatusType": { "IsOperational": false },
+    "Connections": [
+      { "PowerKW": 11, "ConnectionType": { "Title": "Type 2" }, "CurrentType": { "Title": "AC" } }
+    ]
+  }
+]

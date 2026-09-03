@@ -100,6 +100,8 @@ model Chargepoint {
   lng           Float
   operator      String?
   powerKw       Float?   @map("power_kw")
+  /// "ac" oder "dc" — vom Ranking benoetigt (Bedarfsklasse, §8).
+  connector     String   @default("ac")
   connectorType String?  @map("connector_type")
   address       String?
   source        String
