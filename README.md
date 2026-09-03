@@ -14,8 +14,8 @@ Dies ist ein bewusstes **n=1-Projekt** (kein Multi-User, keine Skalierung).
 |---|---|---|
 | **M0** | Scaffold: Next.js + TypeScript + Prisma, CI (Lint/Typecheck/Vitest) | ✅ |
 | **M1** | Resolver: `maps.app.goo.gl` → Koordinaten, drei Stufen, Fixtures | ✅ |
+| **M3** | Ranking (§8) + Ergebnisseite mit Top 3, Sprechtext, Deeplinks (Seed-Daten) | ✅ |
 | M2 | Statischer Datenbestand (BNetzA + OCM, PostGIS-Umkreissuche) | offen |
-| M3 | End-to-End ohne Push (Kurzbefehl → API → Ergebnisseite) | offen |
 | M4 | Realtime + Push (MobiData-BW-Poller, ntfy) | offen |
 | M5 | ETA + Trigger (Directions API, Siri/CarPlay/Bluetooth, Pings) | offen |
 | M6 | Freihaendig (Sprechtext, Vorlesen, drei Siri-Kurzbefehle) | offen |
@@ -74,15 +74,49 @@ npm run prisma:migrate    # Migration gegen die DATABASE_URL
 Datenmodell: `prisma/schema.prisma` (Konzept §9) — `trips`, `trip_pings`,
 `recommendations`, `chargepoints`, `chargepoint_status`.
 
+## Ranking (M3)
+
+`src/lib/chargers/` setzt Konzept §8 um und nutzt dabei das Fahrzeugprofil:
+
+- **Radius-Erweiterung**: 500 m → 1000 m → 2000 m, das Ergebnis benennt die
+  Erweiterung explizit.
+- **Bedarfsklasse** aus Aufenthaltsdauer + Rückfahrt (`ac_ok` / `ac_or_dc` /
+  `dc_required`).
+- **Fahrzeug-Deckelung**: Die nutzbare Leistung wird bei der Akzeptanz des
+  Autos gekappt (135 kW DC / 11 kW AC) — ein 300-kW-HPC wird nicht höher
+  bewertet als ein 150-kW-Lader.
+- **Score** = 0,4·Nähe + 0,4·Klassen-Match + 0,2·Verfügbarkeit.
+- **Sprechtext** (§6.6): ausgeschriebene Einheiten, Gehdistanz im Text, keine
+  IDs/Betreiber, ein Satz + Bewertung.
+- **Ehrlichkeit** (§5.1): pro Ladepunkt Zeitstempel oder „Status unbekannt".
+
+**Verfeinerung zu §8, Schritt 3**: Ein Ladepunkt am Ziel bekommt Rang 1 nur,
+wenn er zur Bedarfsklasse passt. Ein 11-kW-AC-Punkt am Ziel wird bei
+`dc_required` NICHT auf Rang 1 gesetzt — sonst würde man ihn empfehlen und
+gleichzeitig als zu langsam bezeichnen. Siehe `PRIORITY_MIN_CLASS` in
+`src/lib/chargers/rank.ts`.
+
+Datenquelle in M3 ist ein Seed im Speicher (`src/lib/chargers/seed.ts`),
+austauschbar gegen die PostGIS-Suche in M2 (gleiches `ChargerSource`-Interface).
+
 ## API
 
 ```
+GET /api/plan?lat=..&lng=..&name=..&dwell=..&return=..
+  (statt lat/lng auch:  u=<share-url>   oder   to=<adresse>)
+  dwell: Minuten ODER Label (kurz | paar | nacht | laenger)
+  → 200 { destination, demandClass, usedRadiusM, expanded,
+          spokenRecommendation, spokenAlternative, top[] }
+  → 422 { needsManualInput, placeNameHint, reason }
+  Beispiel: /api/plan?lat=53.5510&lng=9.9215&dwell=nacht
+
+GET /plan?…    dieselben Parameter, aber als Ergebnisseite im Browser
+
 POST /api/destinations
   { "shareUrl": "https://maps.app.goo.gl/…",
     "dwellMinutes": 480, "returnTripKm": 0 }
   → 201 { id, lat, lng, name, method, status }
   → 422 { needsManualInput: true, placeNameHint, reason }   (Stufe 3)
-
   Manueller Fallback:
   { "manualAddress": "Lichtentaler Allee, Baden-Baden", "dwellMinutes": 480 }
 

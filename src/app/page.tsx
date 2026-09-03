@@ -12,8 +12,39 @@ export default function Home() {
         <ul style={{ lineHeight: 1.8 }}>
           <li>M0 — Scaffold (Next.js, TypeScript, Prisma, CI): erledigt</li>
           <li>M1 — Resolver (Share-URL → Koordinaten, 3 Stufen): erledigt</li>
+          <li>M3 — Ranking + Ergebnisseite (Seed-Daten): erledigt</li>
           <li>M2 — Statischer Datenbestand (BNetzA/OCM, PostGIS): offen</li>
-          <li>M3 — End-to-End ohne Push: offen</li>
+          <li>M4 — Realtime + Push: offen</li>
+        </ul>
+      </section>
+
+      <section style={{ marginTop: "1.5rem" }}>
+        <h2 style={{ fontSize: "1.1rem" }}>Live-Demo (Seed-Daten)</h2>
+        <ul style={{ lineHeight: 1.9 }}>
+          <li>
+            <a
+              href="/plan?lat=53.5510&lng=9.9215&name=Gastwerk%20Hotel%20Hamburg&dwell=nacht"
+              style={{ color: "#4ea1ff" }}
+            >
+              Gastwerk Hotel Hamburg — ueber Nacht
+            </a>
+          </li>
+          <li>
+            <a
+              href="/plan?lat=53.5510&lng=9.9215&name=Gastwerk%20Hotel%20Hamburg&dwell=kurz&return=300"
+              style={{ color: "#4ea1ff" }}
+            >
+              Gastwerk Hotel Hamburg — kurzer Halt, 300 km Rueckfahrt
+            </a>
+          </li>
+          <li>
+            <a
+              href="/plan?lat=53.2000&lng=7.5000&name=Landgasthof&dwell=paar"
+              style={{ color: "#4ea1ff" }}
+            >
+              Laendliches Ziel — Radius-Erweiterung
+            </a>
+          </li>
         </ul>
       </section>
 
