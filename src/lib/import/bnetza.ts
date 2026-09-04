@@ -23,6 +23,22 @@ import {
 
 const DELIM = ";";
 
+/**
+ * Erkennt das Trennzeichen aus der Kopfzeile. Reale BNetzA-Exporte gibt es
+ * semikolon-getrennt (offiziell, Dezimalkomma) UND komma-getrennt (diverse
+ * Open-Data-Spiegel, Dezimalpunkt). Wir zaehlen die Kandidaten und nehmen
+ * den haeufigsten. parseGermanNumber kommt mit beiden Dezimaltrennern klar.
+ */
+export function detectDelimiter(headerLine: string): string {
+  const counts: Array<[string, number]> = [
+    [";", (headerLine.match(/;/g) ?? []).length],
+    [",", (headerLine.match(/,/g) ?? []).length],
+    ["\t", (headerLine.match(/\t/g) ?? []).length],
+  ];
+  counts.sort((a, b) => b[1] - a[1]);
+  return counts[0]![1] > 0 ? counts[0]![0] : DELIM;
+}
+
 /** CSV-Zeile splitten, Anfuehrungszeichen respektieren. */
 export function splitCsvLine(line: string, delim = DELIM): string[] {
   const out: string[] = [];
@@ -86,7 +102,8 @@ export function parseBnetzaCsv(text: string): Charger[] {
   }
   if (headerIdx === -1) return [];
 
-  const header = splitCsvLine(lines[headerIdx]!);
+  const delim = detectDelimiter(lines[headerIdx]!);
+  const header = splitCsvLine(lines[headerIdx]!, delim);
   const headerIndex = new Map<string, number>();
   header.forEach((h, i) => headerIndex.set(normalizeKey(h), i));
 
@@ -96,7 +113,7 @@ export function parseBnetzaCsv(text: string): Charger[] {
   for (let i = headerIdx + 1; i < lines.length; i++) {
     const raw = lines[i]!;
     if (raw.trim() === "") continue;
-    const row = splitCsvLine(raw);
+    const row = splitCsvLine(raw, delim);
 
     const lat = parseGermanNumber(pick(row, headerIndex, ["Breitengrad"]));
     const lng = parseGermanNumber(pick(row, headerIndex, ["Längengrad", "Laengengrad"]));
