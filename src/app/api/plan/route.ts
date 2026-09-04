@@ -34,6 +34,7 @@ export async function GET(request: Request) {
     lng: searchParams.get("lng"),
     u: searchParams.get("u"),
     to: searchParams.get("to"),
+    q: searchParams.get("q"),
     name: searchParams.get("name"),
   });
 

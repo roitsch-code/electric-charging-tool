@@ -22,6 +22,7 @@ export async function resolveDestination(params: {
   lng?: string | number | null;
   u?: string | null;
   to?: string | null;
+  q?: string | null;
   name?: string | null;
 }): Promise<DestinationResolution> {
   const lat = toNum(params.lat);
@@ -32,6 +33,15 @@ export async function resolveDestination(params: {
       method: "coords",
       coords: { lat, lng, name: params.name?.trim() || undefined },
     };
+  }
+
+  // q = ein Feld fuers Web-Formular: Link ODER Adresse. Automatisch einsortiert.
+  if (params.q && params.q.trim()) {
+    const q = params.q.trim();
+    const r = /^https?:\/\//i.test(q)
+      ? await resolveShareUrl(q)
+      : await resolveManualAddress(q);
+    return fromResolution(r);
   }
 
   if (params.u && params.u.trim()) {

@@ -47,6 +47,7 @@ export default async function PlanPage({
     lng: one(sp.lng),
     u: one(sp.u),
     to: one(sp.to),
+    q: one(sp.q),
     name: one(sp.name),
   });
 

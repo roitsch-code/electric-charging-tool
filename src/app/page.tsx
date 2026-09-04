@@ -7,14 +7,80 @@ export default function Home() {
         Autobahn.
       </p>
 
+      {/* Eingabe: Google-Maps-Link ODER Adresse einfuegen (kein Kurzbefehl noetig). */}
+      <form
+        method="get"
+        action="/plan"
+        style={{
+          marginTop: "1.5rem",
+          background: "#14181d",
+          padding: "1rem",
+          borderRadius: 12,
+        }}
+      >
+        <label style={{ display: "block", fontSize: "0.85rem", color: "#9aa2ac", marginBottom: 6 }}>
+          Google-Maps-Link einfügen oder Adresse eingeben
+        </label>
+        <input
+          name="q"
+          required
+          placeholder="z. B. https://maps.app.goo.gl/… oder Große Elbstraße 39 Hamburg"
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            background: "#0b0d10",
+            border: "1px solid #1b2129",
+            borderRadius: 8,
+            color: "#e6e8eb",
+            padding: "0.7rem 0.8rem",
+            fontSize: "1rem",
+          }}
+        />
+        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+          <select
+            name="dwell"
+            defaultValue="nacht"
+            style={{
+              flex: 1,
+              minWidth: 160,
+              background: "#0b0d10",
+              border: "1px solid #1b2129",
+              borderRadius: 8,
+              color: "#e6e8eb",
+              padding: "0.7rem 0.8rem",
+              fontSize: "1rem",
+            }}
+          >
+            <option value="kurz">Kurz (unter 1 h)</option>
+            <option value="paar">Paar Stunden</option>
+            <option value="nacht">Über Nacht</option>
+            <option value="laenger">Länger</option>
+          </select>
+          <button
+            type="submit"
+            style={{
+              background: "#4ea1ff",
+              color: "#00121f",
+              border: "none",
+              borderRadius: 8,
+              padding: "0.7rem 1.2rem",
+              fontSize: "1rem",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            Laden finden
+          </button>
+        </div>
+      </form>
+
       <section style={{ marginTop: "2rem" }}>
         <h2 style={{ fontSize: "1.1rem" }}>Status</h2>
         <ul style={{ lineHeight: 1.8 }}>
-          <li>M0 — Scaffold (Next.js, TypeScript, Prisma, CI): erledigt</li>
-          <li>M1 — Resolver (Share-URL → Koordinaten, 3 Stufen): erledigt</li>
-          <li>M3 — Ranking + Ergebnisseite (Seed-Daten): erledigt</li>
-          <li>M2 — Statischer Datenbestand (BNetzA/OCM, PostGIS): offen</li>
-          <li>M4 — Realtime + Push: offen</li>
+          <li>M1 — Resolver (Link → Koordinaten): erledigt</li>
+          <li>M2 — DE-weiter Datenbestand (BNetzA-API, PostGIS): live</li>
+          <li>M3 — Ranking + Ergebnisseite: erledigt</li>
+          <li>M4 — Live-Belegung (TomTom, on-demand): live</li>
         </ul>
       </section>
 
