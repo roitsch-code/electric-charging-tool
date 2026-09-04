@@ -1,0 +1,54 @@
+# Ladeplanner auf Hetzner (Docker Compose). DB ist extern (Neon) -> kein
+# Postgres-Container. App + Caddy (TLS) + ofelia (Cron im Minutentakt).
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ladeplanner-app:latest
+    container_name: ladeplanner-app
+    restart: unless-stopped
+    environment:
+      # Neon POOLED-URL (mit -pooler) fuer die laufende App
+      DATABASE_URL: ${DATABASE_URL}
+      CHARGER_SOURCE: ${CHARGER_SOURCE:-postgis}
+      TOMTOM_API_KEY: ${TOMTOM_API_KEY:-}
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+      NTFY_TOPIC: ${NTFY_TOPIC:-}
+      CRON_SECRET: ${CRON_SECRET:-}
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: ladeplanner-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+  ofelia:
+    image: mcuadros/ofelia:latest
+    container_name: ladeplanner-ofelia
+    restart: unless-stopped
+    depends_on:
+      - app
+    command: daemon --config=/etc/ofelia/config.ini
+    volumes:
+      - ./deploy/ofelia.ini:/etc/ofelia/config.ini:ro
+      # noetig, damit ofelia in den app-Container execen kann
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+volumes:
+  caddy-data:
+  caddy-config:

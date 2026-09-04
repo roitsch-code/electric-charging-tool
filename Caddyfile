@@ -1,0 +1,10 @@
+# Caddy: automatisches HTTPS (Let's Encrypt) + Reverse-Proxy auf die App.
+# DOMAIN und ACME_EMAIL kommen aus der .env (docker-compose).
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}

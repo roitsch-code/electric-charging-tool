@@ -2,8 +2,10 @@
 // Postgres; PostGIS-Umkreissuche kommt in M2 als raw query dazu.
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  // native = diese Session; debian = Docker-Runtime (node:20-bookworm-slim)
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
