@@ -1,4 +1,5 @@
 import Link from "next/link";
+import StartTripButton from "./StartTripButton";
 import {
   driveToChargerUrl,
   planDestination,
@@ -147,6 +148,16 @@ async function Result({
           <ChargerCard key={r.charger.evseId} r={r} dest={coords} />
         ))}
       </div>
+
+      {plan.top.length > 0 && (
+        <StartTripButton
+          destLat={coords.lat}
+          destLng={coords.lng}
+          destName={coords.name}
+          dwellMinutes={input.dwellMinutes}
+          returnTripKm={input.returnTripKm}
+        />
+      )}
 
       <p style={{ color: C.muted, fontSize: "0.75rem", marginTop: "1.25rem" }}>
         {plan.candidateCount} Kandidat(en) im {plan.usedRadiusM}-m-Umkreis.

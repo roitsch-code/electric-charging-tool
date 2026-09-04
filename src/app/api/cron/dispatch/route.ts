@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { planDestination } from "@/lib/chargers";
 import { getChargerSource } from "@/lib/chargers/source-factory";
+import { getAvailabilityProvider } from "@/lib/availability";
 import { buildPushMessage } from "@/lib/notify/message";
 import { sendNtfy } from "@/lib/notify/ntfy";
 import { assertCron } from "../guard";
@@ -40,6 +41,7 @@ export async function GET(request: Request) {
   });
 
   const source = getChargerSource();
+  const availability = getAvailabilityProvider();
   const sent: string[] = [];
 
   for (const trip of due) {
@@ -52,7 +54,8 @@ export async function GET(request: Request) {
       dwellMinutes: trip.dwellMinutes,
       returnTripKm: trip.returnTripKm,
     };
-    const plan = await planDestination(coords, input, source);
+    // Live-Belegung genau jetzt pruefen (das ist der Sinn des Pushs).
+    const plan = await planDestination(coords, input, source, availability);
     const msg = buildPushMessage(topic, plan, input, coords);
     const result = await sendNtfy(msg);
 
