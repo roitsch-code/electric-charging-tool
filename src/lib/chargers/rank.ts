@@ -120,6 +120,13 @@ export function rankChargers(
     } satisfies RankedCharger;
   });
 
+  sortRanked(scored);
+  return scored;
+}
+
+/** Sortiert eine gerankte Liste (atDestination-Prioritaet, Score, Naehe) und
+ * vergibt die Rangnummern neu. Auch nach nachtraeglicher Anreicherung nutzbar. */
+export function sortRanked(scored: RankedCharger[]): void {
   scored.sort((a, b) => {
     // atDestination gewinnt — aber nur, wenn der Punkt zur Bedarfsklasse passt
     // (siehe PRIORITY_MIN_CLASS; Verfeinerung von Konzept §8, Schritt 3).
@@ -130,9 +137,18 @@ export function rankChargers(
     // Gleichstand: naeher gewinnt.
     return a.walkingM - b.walkingM;
   });
-
   scored.forEach((r, i) => (r.rank = i + 1));
-  return scored;
+}
+
+/** Bewertet Verfuegbarkeit + Gesamt-Score neu (nach Live-Anreicherung). */
+export function rescoreAvailability(r: RankedCharger): void {
+  const a = availabilityScore(r.charger);
+  r.availabilityScore = round3(a);
+  r.score = round3(
+    WEIGHTS.distance * r.distanceScore +
+      WEIGHTS.class * r.classScore +
+      WEIGHTS.availability * a,
+  );
 }
 
 function round3(n: number): number {

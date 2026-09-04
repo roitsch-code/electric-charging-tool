@@ -6,6 +6,7 @@ import {
   walkFromChargerUrl,
 } from "@/lib/chargers";
 import { getChargerSource } from "@/lib/chargers/source-factory";
+import { getAvailabilityProvider } from "@/lib/availability";
 import {
   parsePlanInput,
   resolveDestination,
@@ -52,7 +53,12 @@ export async function GET(request: Request) {
     return: searchParams.get("return"),
   });
 
-  const plan = await planDestination(dest.coords, input, getChargerSource());
+  const plan = await planDestination(
+    dest.coords,
+    input,
+    getChargerSource(),
+    getAvailabilityProvider(),
+  );
 
   return NextResponse.json({
     destination: dest.coords,

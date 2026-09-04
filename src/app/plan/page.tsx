@@ -7,6 +7,7 @@ import {
   type RankedCharger,
 } from "@/lib/chargers";
 import { getChargerSource } from "@/lib/chargers/source-factory";
+import { getAvailabilityProvider } from "@/lib/availability";
 import { parsePlanInput, resolveDestination } from "@/lib/planRequest";
 import type { DemandClass } from "@/lib/vehicle";
 
@@ -77,7 +78,12 @@ async function Result({
   method?: string;
   input: ReturnType<typeof parsePlanInput>;
 }) {
-  const plan = await planDestination(coords, input, getChargerSource());
+  const plan = await planDestination(
+    coords,
+    input,
+    getChargerSource(),
+    getAvailabilityProvider(),
+  );
   const spoken = spokenForPlan(plan, input, 0);
 
   return (

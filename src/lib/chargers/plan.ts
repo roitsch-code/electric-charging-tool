@@ -1,22 +1,27 @@
+import type { AvailabilityProvider } from "@/lib/availability/types";
+import { applySnapshot, nearestSnapshot } from "@/lib/availability/enrich";
 import type { Coordinates } from "@/lib/resolver/types";
 import { demandClass } from "@/lib/vehicle";
-import { rankChargers } from "./rank";
+import { rankChargers, rescoreAvailability, sortRanked } from "./rank";
 import { seedSource } from "./seed";
-import type { Charger, ChargerSource, PlanInput, PlanResult } from "./types";
+import type { Charger, ChargerSource, PlanInput, PlanResult, RankedCharger } from "./types";
 
 /** Suchradien in Metern (Konzept §8, Schritt 1/2). */
 export const SEARCH_RADII_M = [500, 1000, 2000];
 
+/** So viele Top-Kandidaten werden mit Live-Belegung angereichert (Kosten-Deckel). */
+const ENRICH_TOP = 8;
+
 /**
  * Kompletter Planungsschritt fuer ein aufgeloestes Ziel (Konzept §8):
  * Kandidaten im wachsenden Radius laden, Bedarfsklasse bestimmen, ranken,
- * Top 3 zurueckgeben — inklusive Radius-Erweiterungs-Flag und
- * Datenaktualitaet fuer die Ehrlichkeitsanzeige (§5.1).
+ * optional die Top-Kandidaten mit Live-Belegung anreichern, Top 3 zurueckgeben.
  */
 export async function planDestination(
   destination: Coordinates & { name?: string },
   input: PlanInput,
   source: ChargerSource = seedSource,
+  availability?: AvailabilityProvider | null,
 ): Promise<PlanResult> {
   const demand = demandClass(input.dwellMinutes, input.returnTripKm);
 
@@ -30,14 +35,34 @@ export async function planDestination(
 
   const ranked = rankChargers(candidates, destination, demand);
 
+  // Live-Belegung on-demand fuer die Top-Kandidaten (Konzept §5.1).
+  if (availability && ranked.length > 0) {
+    try {
+      const snaps = await availability.near(destination, usedRadiusM);
+      if (snaps.length > 0) {
+        for (const r of ranked.slice(0, ENRICH_TOP)) {
+          const snap = nearestSnapshot(r.charger, snaps);
+          if (snap) {
+            applySnapshot(r, snap);
+            rescoreAvailability(r);
+          }
+        }
+        sortRanked(ranked);
+      }
+    } catch {
+      // Belegung ist optional: bei Fehler bleibt es beim statischen Ranking.
+    }
+  }
+
+  const top = ranked.slice(0, 3);
   return {
     destination,
     demandClass: demand,
     usedRadiusM,
     expanded: usedRadiusM > SEARCH_RADII_M[0]! && candidates.length > 0,
     candidateCount: candidates.length,
-    top: ranked.slice(0, 3),
-    dataTimestamp: newestTimestamp(candidates),
+    top,
+    dataTimestamp: newestTimestamp(ranked.map((r) => r.charger)),
   };
 }
 
@@ -48,3 +73,5 @@ function newestTimestamp(chargers: Charger[]): string | null {
     .sort();
   return stamps.length ? stamps[stamps.length - 1]! : null;
 }
+
+export type { RankedCharger };
