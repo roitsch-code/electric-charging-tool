@@ -20,6 +20,7 @@
     "import:ocm": "tsx scripts/import-ocm.ts",
     "import:ocpdb": "tsx scripts/import-ocpdb.ts",
     "poll:realtime": "tsx scripts/poll-realtime.ts",
+    "mobilithek:sample": "tsx scripts/mobilithek-sample.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
