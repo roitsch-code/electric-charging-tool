@@ -1,0 +1,47 @@
+# Ladeplanner MITBENUTZEN auf einem bestehenden Server (z. B. BrewLog-VPS).
+#
+# Kein eigenes Caddy, keine Ports: Der bereits laufende Caddy (von BrewLog)
+# routet eine Subdomain auf den ladeplanner-app-Container. Dazu haengt sich
+# dieser Stack in dessen Docker-Netz (Standard: brewlog_default).
+# DB liegt extern (Neon) -> kein Postgres-Container.
+#
+# Start:  docker compose -f docker-compose.cohost.yml up -d --build
+#
+# Netzname pruefen/anpassen:  docker network ls | grep brewlog
+#   ggf. in .env:  SHARED_NETWORK=<name>
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ladeplanner-app:latest
+    container_name: ladeplanner-app
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      CHARGER_SOURCE: ${CHARGER_SOURCE:-postgis}
+      TOMTOM_API_KEY: ${TOMTOM_API_KEY:-}
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+      NTFY_TOPIC: ${NTFY_TOPIC:-}
+      CRON_SECRET: ${CRON_SECRET:-}
+    networks:
+      - shared
+    # KEINE ports: — der bestehende Caddy proxyt intern ueber den Containernamen.
+
+  ofelia:
+    image: mcuadros/ofelia:latest
+    container_name: ladeplanner-ofelia
+    restart: unless-stopped
+    depends_on:
+      - app
+    command: daemon --config=/etc/ofelia/config.ini
+    volumes:
+      - ./deploy/ofelia.ini:/etc/ofelia/config.ini:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - shared
+
+networks:
+  shared:
+    external: true
+    name: ${SHARED_NETWORK:-brewlog_default}

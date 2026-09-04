@@ -66,6 +66,42 @@ cd /opt/ladeplanner && git pull && docker compose up -d --build
 - `/api/cron/poll` alle 5 min (nur falls DB-Status-Poller genutzt wird).
 Beide mit `Authorization: Bearer $CRON_SECRET`.
 
+## Variante: MITBENUTZEN eines bestehenden Servers (empfohlen, ~0 € extra)
+
+Ladeplanner läuft neben einem bestehenden Stack (z. B. BrewLog). Kein zweites
+Caddy — der vorhandene Caddy routet eine Subdomain auf den App-Container, der
+sich in dessen Docker-Netz hängt.
+
+```bash
+# auf dem bestehenden Server
+git clone -b claude/new-project-kickoff-69wgyp \
+  https://github.com/roitsch-code/electric-charging-tool.git /opt/ladeplanner
+cd /opt/ladeplanner && cp .env.example .env && nano .env
+#   DATABASE_URL, CHARGER_SOURCE=postgis, TOMTOM_API_KEY, NTFY_TOPIC, CRON_SECRET
+#   (DOMAIN/ACME_EMAIL werden hier NICHT gebraucht — Caddy läuft schon)
+
+# Netzname des bestehenden Stacks prüfen (Default brewlog_default):
+docker network ls | grep -E "brewlog|default"
+#   weicht er ab -> in .env:  SHARED_NETWORK=<name>
+
+docker compose -f docker-compose.cohost.yml up -d --build
+```
+
+Dann im **bestehenden Caddyfile** (z. B. `/opt/brewlog/Caddyfile`) einen Block
+ergänzen und Caddy neu laden:
+```
+ladeplanner.deine-domain.de {
+    reverse_proxy ladeplanner-app:3000
+}
+```
+```bash
+cd /opt/brewlog && docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+```
+DNS: `ladeplanner.deine-domain.de` → dieselbe Server-IP. Fertig — Caddy holt
+das TLS-Zertifikat automatisch.
+
+**Update-Deploy:** `cd /opt/ladeplanner && git pull && docker compose -f docker-compose.cohost.yml up -d --build`
+
 ## Ressourcen
 App-Image ~200–300 MB, Container-RAM < 512 MB. Eine CX22 trägt das locker;
 Ladeplanner kann auch neben einem bestehenden Stack laufen (dann Caddy nur
