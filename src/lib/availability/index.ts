@@ -5,16 +5,29 @@ export {
   searchTomTomEv,
   fetchTomTomAvailability,
 } from "./tomtom";
+export { GoogleAvailabilityProvider, aggregateGoogleStatus } from "./google";
+export { CompositeAvailabilityProvider, mergeSnapshots } from "./composite";
 export { nearestSnapshot, applySnapshot, MATCH_THRESHOLD_M } from "./enrich";
 
 import type { AvailabilityProvider } from "./types";
 import { TomTomAvailabilityProvider } from "./tomtom";
+import { GoogleAvailabilityProvider } from "./google";
+import { CompositeAvailabilityProvider } from "./composite";
 
 /**
- * Waehlt den Live-Belegungs-Provider. Aktiv nur, wenn ein Key gesetzt ist —
- * sonst null (App zeigt weiter "Status unbekannt").
+ * Baut den Live-Belegungs-Provider aus allen gesetzten Keys (Fallback-Kette:
+ * TomTom, dann Google). Ohne Key: null -> App zeigt "Status unbekannt".
+ * HERE folgt, sobald ein echtes Sample das Response-Schema bestaetigt.
  */
 export function getAvailabilityProvider(): AvailabilityProvider | null {
-  const key = process.env.TOMTOM_API_KEY;
-  return key ? new TomTomAvailabilityProvider(key) : null;
+  const providers: AvailabilityProvider[] = [];
+  if (process.env.TOMTOM_API_KEY) {
+    providers.push(new TomTomAvailabilityProvider(process.env.TOMTOM_API_KEY));
+  }
+  if (process.env.GOOGLE_PLACES_API_KEY) {
+    providers.push(new GoogleAvailabilityProvider(process.env.GOOGLE_PLACES_API_KEY));
+  }
+  if (providers.length === 0) return null;
+  if (providers.length === 1) return providers[0]!;
+  return new CompositeAvailabilityProvider(providers);
 }
