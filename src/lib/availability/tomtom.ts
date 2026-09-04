@@ -17,7 +17,6 @@ import type { AvailabilityProvider, AvailabilitySnapshot } from "./types";
  */
 
 const BASE = "https://api.tomtom.com";
-const EV_CATEGORY = "7309";
 const MAX_LOOKUPS = 10;
 const TIMEOUT_MS = 6000;
 
@@ -76,7 +75,20 @@ async function getJson(url: string): Promise<unknown> {
 interface SearchApiResult {
   poi?: { name?: string };
   position?: { lat?: number; lon?: number };
+  info?: string;
   dataSources?: { chargingAvailability?: { id?: string } };
+}
+
+const INFO_PREFIX = "search:ev:";
+
+/** Availability-ID: bevorzugt dataSources, sonst aus dem info-Feld. */
+function availabilityIdOf(r: SearchApiResult): string | undefined {
+  const fromSource = r.dataSources?.chargingAvailability?.id;
+  if (fromSource) return fromSource;
+  if (typeof r.info === "string" && r.info.startsWith(INFO_PREFIX)) {
+    return r.info.slice(INFO_PREFIX.length);
+  }
+  return undefined;
 }
 
 export async function searchTomTomEv(
@@ -84,14 +96,16 @@ export async function searchTomTomEv(
   radiusM: number,
   key: string,
 ): Promise<SearchResult[]> {
+  // poiSearch mit echtem Suchbegriff. WICHTIG (verifiziert 2026-09): weder
+  // categorySearch/EV noch poiSearch MIT categorySet=7309 liefern Treffer —
+  // erst der reine Textquery "charging station" gibt die EV-Stationen zurueck.
   const url =
-    `${BASE}/search/2/categorySearch/EV.json?key=${encodeURIComponent(key)}` +
-    `&lat=${center.lat}&lon=${center.lng}&radius=${Math.max(radiusM, 100)}` +
-    `&categorySet=${EV_CATEGORY}&limit=20`;
+    `${BASE}/search/2/poiSearch/charging%20station.json?key=${encodeURIComponent(key)}` +
+    `&lat=${center.lat}&lon=${center.lng}&radius=${Math.max(radiusM, 100)}&limit=20`;
   const data = (await getJson(url)) as { results?: SearchApiResult[] };
   const out: SearchResult[] = [];
   for (const r of data.results ?? []) {
-    const id = r.dataSources?.chargingAvailability?.id;
+    const id = availabilityIdOf(r);
     const lat = r.position?.lat;
     const lng = r.position?.lon;
     if (!id || typeof lat !== "number" || typeof lng !== "number") continue;
