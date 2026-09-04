@@ -19,6 +19,7 @@
     "import:bnetza": "tsx scripts/import-bnetza.ts",
     "import:ocm": "tsx scripts/import-ocm.ts",
     "import:ocpdb": "tsx scripts/import-ocpdb.ts",
+    "import:bnetza-api": "tsx scripts/import-bnetza-api.ts",
     "poll:realtime": "tsx scripts/poll-realtime.ts",
     "mobilithek:sample": "tsx scripts/mobilithek-sample.ts",
     "postinstall": "prisma generate"

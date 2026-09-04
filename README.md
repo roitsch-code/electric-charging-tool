@@ -137,6 +137,24 @@ OCM_API_KEY=… npm run import:ocm -- --country DE # optional, Key nötig
 
 Parser vorab offline prüfen (ohne DB): `npm run import:bnetza -- <csv> --dry`.
 
+### DE-weit empfohlen: BNetzA-API (Nationale Leitstelle)
+
+Das Mobilithek-Angebot „BNetzA Liste aus Webserviceschnittstelle" (NOW GmbH,
+Open Data, **nicht gebrokert**) liefert DE-weit ein normalisiertes
+3-Tabellen-Modell (`Ladestation` → `Ladepunkt` → `Stecker`). Importer:
+`src/lib/import/bnetza-api.ts`, joint Koordinaten (Station) + Leistung/AC-DC
+(Stecker) je Ladepunkt. Verifiziert an echten Daten: ~209k Ladepunkte in
+~3 s. Nutzung:
+
+```bash
+npm run import:bnetza-api -- ladestation.csv ladepunkt.csv stecker.csv        # in DB
+npm run import:bnetza-api -- ladestation.csv ladepunkt.csv stecker.csv --dry  # nur parsen
+```
+
+Realtime („jetzt frei?") wäre das separate, **gebrokerte** AFIR-Dynamic-Angebot
+(Organisation + X.509-Zertifikat + Freigabe) — bewusst zurückgestellt; ohne
+Realtime zeigt die App „Status unbekannt".
+
 ## Realtime + Push (M4)
 
 - **Realtime** (`src/lib/realtime/mobidata.ts`): Client für den öffentlichen
