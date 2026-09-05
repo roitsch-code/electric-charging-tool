@@ -29,8 +29,12 @@ export function mobilithekSubscriptionUrl(
  */
 
 export interface MobilithekTls {
-  cert: string | Buffer;
-  key: string | Buffer;
+  /** Entweder PEM-Cert+Key … */
+  cert?: string | Buffer;
+  key?: string | Buffer;
+  /** … ODER die PKCS#12-Datei direkt (Mobilithek liefert .p12). */
+  pfx?: Buffer;
+  passphrase?: string;
   ca?: string | Buffer;
 }
 
@@ -40,24 +44,41 @@ export interface MobilithekResponse {
   body: string;
 }
 
-/** Roher mTLS-GET gegen eine Mobilithek-Pull-URL. */
+/**
+ * Roher mTLS-GET gegen eine Mobilithek-Pull-URL. `ifModifiedSince` (ISO oder
+ * HTTP-Date) aktiviert den Delta-Abruf (Konzept §5.1; Spec Kap. 4.8): der
+ * Broker antwortet dann mit 304, wenn kein neues Datenpaket vorliegt.
+ */
 export function fetchMobilithekRaw(
   url: string,
   tls: MobilithekTls,
-  timeoutMs = 20000,
+  opts: { timeoutMs?: number; ifModifiedSince?: string } = {},
 ): Promise<MobilithekResponse> {
+  const timeoutMs = opts.timeoutMs ?? 20000;
   return new Promise((resolve, reject) => {
     const u = new URL(url);
+    const headers: Record<string, string> = {
+      "User-Agent": "ladeplanner/0.1 (n=1 hobby project)",
+    };
+    if (opts.ifModifiedSince) {
+      const d = new Date(opts.ifModifiedSince);
+      headers["If-Modified-Since"] = Number.isNaN(d.getTime())
+        ? opts.ifModifiedSince
+        : d.toUTCString();
+    }
     const req = https.request(
       {
         hostname: u.hostname,
         port: u.port || 443,
         path: u.pathname + u.search,
         method: "GET",
+        // Entweder PEM (cert/key) oder PKCS#12 (pfx/passphrase).
         cert: tls.cert,
         key: tls.key,
+        pfx: tls.pfx,
+        passphrase: tls.passphrase,
         ca: tls.ca,
-        headers: { "User-Agent": "ladeplanner/0.1 (n=1 hobby project)" },
+        headers,
         timeout: timeoutMs,
       },
       (res) => {
@@ -79,15 +100,28 @@ export function fetchMobilithekRaw(
 }
 
 /**
- * Laedt Zertifikat/Schluessel/CA aus der Umgebung. Jeder Wert ist entweder
- * ein Datei-PFAD oder direkt der PEM-Inhalt (erkannt an "BEGIN").
- *   MOBILITHEK_CERT, MOBILITHEK_KEY, MOBILITHEK_CA (CA optional)
+ * Laedt die mTLS-Zugangsdaten aus der Umgebung. Zwei Varianten:
+ *
+ *   A) MOBILITHEK_PFX="/pfad/certificate.p12" + MOBILITHEK_PFX_PASSWORD="…"
+ *      (einfachster Weg — Node liest die .p12 direkt, kein openssl noetig)
+ *   B) MOBILITHEK_CERT + MOBILITHEK_KEY (PEM-Pfad ODER PEM-Inhalt)
+ *
+ * CA: MOBILITHEK_CA (optional), sonst die fest eingebaute M2M-Kette.
  */
 export function loadMobilithekTlsFromEnv(): MobilithekTls {
+  const ca = readPemFromEnv("MOBILITHEK_CA", false) ?? MOBILITHEK_M2M_CA;
+
+  const pfxPath = process.env.MOBILITHEK_PFX;
+  if (pfxPath) {
+    return {
+      pfx: readFileSync(pfxPath),
+      passphrase: process.env.MOBILITHEK_PFX_PASSWORD ?? "",
+      ca,
+    };
+  }
+
   const cert = readPemFromEnv("MOBILITHEK_CERT", true)!;
   const key = readPemFromEnv("MOBILITHEK_KEY", true)!;
-  // CA: eigener Wert per Env, sonst die fest eingebaute Mobilithek-M2M-Kette.
-  const ca = readPemFromEnv("MOBILITHEK_CA", false) ?? MOBILITHEK_M2M_CA;
   return { cert, key, ca };
 }
 
