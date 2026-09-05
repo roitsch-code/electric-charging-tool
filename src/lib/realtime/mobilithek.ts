@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import https from "node:https";
+import tls from "node:tls";
 import { MOBILITHEK_M2M_CA } from "./mobilithek-ca";
 
 /** Basis des Mobilithek-M2M-Brokers (Pull, mTLS, Port 8443). */
@@ -35,7 +36,7 @@ export interface MobilithekTls {
   /** … ODER die PKCS#12-Datei direkt (Mobilithek liefert .p12). */
   pfx?: Buffer;
   passphrase?: string;
-  ca?: string | Buffer;
+  ca?: string | Buffer | Array<string | Buffer>;
 }
 
 export interface MobilithekResponse {
@@ -109,7 +110,12 @@ export function fetchMobilithekRaw(
  * CA: MOBILITHEK_CA (optional), sonst die fest eingebaute M2M-Kette.
  */
 export function loadMobilithekTlsFromEnv(): MobilithekTls {
-  const ca = readPemFromEnv("MOBILITHEK_CA", false) ?? MOBILITHEK_M2M_CA;
+  // Server-Verifikation: der TLS-Server mobilithek.info:8443 hat ein
+  // OEFFENTLICHES Zertifikat -> System-Wurzeln behalten. Die m2m-CA (Client-PKI)
+  // legen wir nur zusaetzlich dazu, ein eigener MOBILITHEK_CA optional obendrauf.
+  const ca: Array<string | Buffer> = [...tls.rootCertificates, MOBILITHEK_M2M_CA];
+  const extraCa = readPemFromEnv("MOBILITHEK_CA", false);
+  if (extraCa) ca.push(extraCa);
 
   const pfxPath = process.env.MOBILITHEK_PFX;
   if (pfxPath) {
