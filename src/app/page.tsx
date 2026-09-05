@@ -81,7 +81,7 @@ export default function Home() {
           <li>M2 — DE-weiter Datenbestand (BNetzA-API, PostGIS): live</li>
           <li>M3 — Ranking + Ergebnisseite: erledigt</li>
           <li>M4 — Live-Belegung (TomTom, on-demand): live</li>
-          <li>M5 — „Losfahren" + Push vor Ankunft (ntfy): erledigt</li>
+          <li>M5 — „Losfahren“ + Push vor Ankunft (ntfy): erledigt</li>
         </ul>
       </section>
 
