@@ -23,6 +23,7 @@
     "import:bnetza-api": "tsx scripts/import-bnetza-api.ts",
     "poll:realtime": "tsx scripts/poll-realtime.ts",
     "mobilithek:sample": "tsx scripts/mobilithek-sample.ts",
+    "mobilithek:join": "tsx scripts/mobilithek-join-check.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
