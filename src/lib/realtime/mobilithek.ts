@@ -1,5 +1,21 @@
 import { readFileSync } from "node:fs";
 import https from "node:https";
+import { MOBILITHEK_M2M_CA } from "./mobilithek-ca";
+
+/** Basis des Mobilithek-M2M-Brokers (Pull, mTLS, Port 8443). */
+const BROKER_BASE = "https://mobilithek.info:8443/mobilithek/api/v1.0";
+
+/**
+ * Pull-URL fuer ein Abonnement. `datex3: true` waehlt den DATEX-II-v3-
+ * Endpunkt (JSON), sonst den generischen Container-Endpunkt.
+ */
+export function mobilithekSubscriptionUrl(
+  subscriptionId: string,
+  opts: { datex3?: boolean } = {},
+): string {
+  const path = opts.datex3 ? "subscription/datexv3" : "subscription";
+  return `${BROKER_BASE}/${path}?subscriptionID=${encodeURIComponent(subscriptionId)}`;
+}
 
 /**
  * Mobilithek-Zugang (Konzept §5.1, DE-weit).
@@ -70,8 +86,9 @@ export function fetchMobilithekRaw(
 export function loadMobilithekTlsFromEnv(): MobilithekTls {
   const cert = readPemFromEnv("MOBILITHEK_CERT", true)!;
   const key = readPemFromEnv("MOBILITHEK_KEY", true)!;
-  const ca = readPemFromEnv("MOBILITHEK_CA", false);
-  return ca ? { cert, key, ca } : { cert, key };
+  // CA: eigener Wert per Env, sonst die fest eingebaute Mobilithek-M2M-Kette.
+  const ca = readPemFromEnv("MOBILITHEK_CA", false) ?? MOBILITHEK_M2M_CA;
+  return { cert, key, ca };
 }
 
 function readPemFromEnv(name: string, required: boolean): string | undefined {
