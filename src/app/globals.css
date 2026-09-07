@@ -22,7 +22,14 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; }
+/* Doku-Shell fest sperren: kein Seiten-Scroll, kein iOS-Rubberband — auf
+   html UND body, sonst scrollt mobiles Firefox/Safari trotzdem. */
+html, body {
+  margin: 0;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
 body {
   background: var(--bg);
   color: var(--fg);

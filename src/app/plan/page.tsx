@@ -35,7 +35,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
   const input = parsePlanInput({ dwell: one(sp.dwell), return: one(sp.return) });
 
   return (
-    <main className="wrap" style={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <main className="wrap" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div className="bloom" style={{ top: 80, left: -80, width: 420, height: 340, opacity: 0.95 }} />
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flex: "none" }}>
         <Link href="/" className="glyph" aria-label="Zurück" style={{ color: "var(--fg)", width: 32, height: 32 }}>

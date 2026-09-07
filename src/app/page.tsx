@@ -37,7 +37,7 @@ const favorites = [
 
 export default function Home() {
   return (
-    <main className="wrap" style={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <main className="wrap" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div className="bloom" style={{ top: -120, right: -90, width: 420, height: 420, opacity: 0.95 }} />
 
       <div className="kicker" style={{ flex: "none" }}>Ladeplanner</div>
