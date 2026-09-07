@@ -58,6 +58,10 @@ async function main() {
   const { PrismaClient } = await import("../src/generated/prisma");
   const prisma = new PrismaClient();
   try {
+    // Spalte idempotent sicherstellen (kein separater Migrations-Schritt nötig).
+    await prisma.$executeRawUnsafe(
+      "ALTER TABLE chargepoints ADD COLUMN IF NOT EXISTS total_points integer",
+    );
     const { upserted } = await upsertChargers(prisma, stations);
     console.log(`${upserted} Stationen in die DB geschrieben (upsert).`);
   } finally {
