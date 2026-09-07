@@ -1,6 +1,7 @@
 import { fetchTomTomAvailability, aggregateTomTomStatus } from "@/lib/availability/tomtom";
 import type { Coordinates } from "@/lib/resolver/types";
 import type { Connector } from "@/lib/vehicle";
+import { cityStandzeit, cityFromAddress } from "@/lib/rules/standzeit";
 import { haversineMeters } from "./geo";
 import type { Charger, ChargerSource } from "./types";
 
@@ -56,18 +57,6 @@ function maxPowerKw(connectors: TTConnector[]): number {
   let m = 0;
   for (const c of connectors) if ((c.ratedPowerKW ?? 0) > m) m = c.ratedPowerKW!;
   return Math.round(m);
-}
-
-/** Düsseldorf/SWD-Standzeitregel (recherchiert): tagsüber 1 Std (DC) / 4 Std
- *  (AC), nachts i. d. R. frei (SWD-Blockiergebühr entfällt 21–08). */
-function swdStandzeit(operator: string | undefined, connector: Connector):
-  | { label: string; verdict: "free" }
-  | undefined {
-  if (!/stadtwerke\s*düsseldorf/i.test(operator ?? "")) return undefined;
-  return {
-    label: connector === "dc" ? "Nachts frei · tagsüber max. 1 Std" : "Nachts frei · tagsüber max. 4 Std",
-    verdict: "free",
-  };
 }
 
 async function searchEv(center: Coordinates, radiusM: number, key: string): Promise<TTResult[]> {
@@ -147,7 +136,8 @@ export class TomTomChargerSource implements ChargerSource {
               ? "occupied"
               : "unknown";
 
-        const sz = swdStandzeit(operator, connector);
+        const city = cityFromAddress(address, first.address?.municipality);
+        const sz = cityStandzeit(city, connector);
         return {
           evseId: `TT:${first.id ?? `${g.lat},${g.lng}`}`,
           name: address ?? operator ?? "Ladepunkt",
