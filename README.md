@@ -2,7 +2,13 @@
 
 Zielzentrierte Ladeplanung fuer E-Autos. Die Autobahn-Ladeplanung ist geloest
 (ABRP, Google Maps). **Ungeloest ist das Laden am Zielort** — passt ein
-Ladepunkt in Gehdistanz zu meiner Aufenthaltsdauer, und ist er jetzt frei?
+Ladepunkt in Gehdistanz zu meiner Aufenthaltsdauer, ist er jetzt frei, und
+**wie lange darf ich dort ueberhaupt stehen?**
+
+Die dritte Frage hat keine bundesweite Datenquelle (die Parkregel steht auf dem
+Schild, je Kommune). Wie der Ladeplanner diese Luecke stopft — kuratiertes
+Regelwerk + Agenten-Recherche mit Quelle — steht in
+**[`docs/standzeit.md`](docs/standzeit.md)**.
 
 Vollstaendiges Konzept: [`docs/konzept.md`](docs/konzept.md).
 
@@ -14,8 +20,10 @@ Dies ist ein bewusstes **n=1-Projekt** (kein Multi-User, keine Skalierung).
 |---|---|---|
 | **M0** | Scaffold: Next.js + TypeScript + Prisma, CI (Lint/Typecheck/Vitest) | ✅ |
 | **M1** | Resolver: `maps.app.goo.gl` → Koordinaten, drei Stufen, Fixtures | ✅ |
-| **M3** | Ranking (§8) + Ergebnisseite mit Top 3, Sprechtext, Deeplinks (Seed-Daten) | ✅ |
+| **M3** | Ranking (§8) + Ergebnisseite (Top 6, Karte, Swipe), Sprechtext, Deeplinks | ✅ |
 | **M2** | Datenimport (BNetzA + OCM) + PostGIS-Umkreissuche, austauschbare Quelle | ✅ (Code; DB-Aktivierung s. u.) |
+| **Live** | TomTom als DE-weite Echtzeit-Quelle (Position + Leistung + Belegung) | ✅ (aktiv bei gesetztem `TOMTOM_API_KEY`) |
+| **Standzeit** | Kuratiertes Regelwerk + „Suche Standzeit"-Knopf (Agent + DB) | ✅ (Knopf braucht `ANTHROPIC_API_KEY`) |
 | **M4** | Realtime (MobiData BW) + ntfy-Push, Cron-Endpunkte | ✅ (Code; live gegen echten Feed getestet) |
 | M5 | ETA + Trigger (Directions API, Siri/CarPlay/Bluetooth, Pings) | offen |
 | M6 | Freihaendig (Sprechtext, Vorlesen, drei Siri-Kurzbefehle) | offen |
@@ -85,7 +93,10 @@ Datenmodell: `prisma/schema.prisma` (Konzept §9) — `trips`, `trip_pings`,
 - **Fahrzeug-Deckelung**: Die nutzbare Leistung wird bei der Akzeptanz des
   Autos gekappt (135 kW DC / 11 kW AC) — ein 300-kW-HPC wird nicht höher
   bewertet als ein 150-kW-Lader.
-- **Score** = 0,4·Nähe + 0,4·Klassen-Match + 0,2·Verfügbarkeit.
+- **Score** = 0,55·Nähe + 0,3·Klassen-Match + 0,15·Verfügbarkeit (nähe-dominant,
+  damit ein naher Schnelllader nicht hinter fernen AC-Säulen verschwindet). Ein
+  **Eignungs-Multiplikator** drückt bei `dc_required` einen AC-Punkt unter jeden
+  nutzbaren DC-Lader, ohne ihn ganz auszublenden (`suitabilityFactor`).
 - **Sprechtext** (§6.6): ausgeschriebene Einheiten, Gehdistanz im Text, keine
   IDs/Betreiber, ein Satz + Bewertung.
 - **Ehrlichkeit** (§5.1): pro Ladepunkt Zeitstempel oder „Status unbekannt".
@@ -96,8 +107,33 @@ wenn er zur Bedarfsklasse passt. Ein 11-kW-AC-Punkt am Ziel wird bei
 gleichzeitig als zu langsam bezeichnen. Siehe `PRIORITY_MIN_CLASS` in
 `src/lib/chargers/rank.ts`.
 
-Datenquelle in M3 ist ein Seed im Speicher (`src/lib/chargers/seed.ts`),
-austauschbar gegen die PostGIS-Suche in M2 (gleiches `ChargerSource`-Interface).
+Datenquelle ist inzwischen **TomTom** live (s. u.); der Seed
+(`src/lib/chargers/seed.ts`) und die PostGIS-Suche bleiben als austauschbare
+Fallbacks (gleiches `ChargerSource`-Interface).
+
+## Live-Daten: TomTom als Quelle
+
+`src/lib/chargers/tomtom-source.ts` ist die aktive Ladepunkt-Quelle — DE-weit,
+echtzeit, per `TOMTOM_API_KEY`. Ein `poiSearch("charging station")` liefert je
+Station Position, Betreiber, Adresse, `chargingPark.connectors` (Typ, kW,
+AC/DC) **und** `dataSources.chargingAvailability.id` für die Live-Belegung.
+Verifiziert an SWD Düsseldorf (Ackerstraße 203 = 2× CCS 300 kW, live 1/2 frei).
+
+TomTom liefert denselben Standort **mehrfach** (pro Connector-Gruppe) — die
+Quelle **aggregiert** nach Adresse/Koordinate und summiert die Live-Zähler,
+sonst entstünden „1/1-Krümel". Ohne Key fällt `source-factory.ts` auf PostGIS
+bzw. Seed zurück.
+
+## Standzeit — die geschlossene Lücke
+
+Wie lange man an einer Säule stehen darf, hat **keine** bundesweite Quelle. Der
+Ladeplanner schließt das in zwei Ebenen: ein kuratiertes, mit Quellen belegtes
+Regelwerk (`src/lib/rules/standzeit.ts`: Düsseldorf, Hamburg, Köln, Aachen,
+Emmerich) und einen **„Suche Standzeit"-Knopf**, der für unbekannte Orte per
+Claude + Websuche recherchiert, die Regel **mit Quelle** anzeigt und in einer
+selbst-anlegenden DB speichert (`city_rules`). Strenger Halluzinations-Schutz:
+gespeichert wird nur, was eine belegte Quelle hat. Die ganze Geschichte:
+**[`docs/standzeit.md`](docs/standzeit.md)**.
 
 ## Echter Datenbestand (M2)
 
@@ -213,9 +249,37 @@ POST /api/destinations
 GET /api/destinations/:id
   → 200 { id, lat, lng, name, method, dwellMinutes, returnTripKm,
           status, recommendations }
+
+GET  /api/standzeit?city=<Stadt>&connector=ac|dc
+  → 200 { found, origin: "static"|"db", label, verdict, source?, note? }
+  (nur Nachschlagen: kuratiertes Regelwerk ∪ gespeicherte Recherche)
+
+POST /api/standzeit   { "city": "Emmerich", "connector": "ac" }
+  → 200 { found, origin: "static"|"db"|"research", label, verdict, source?, note? }
+  („Suche Standzeit": kuratiert → DB → Recherche; speichert bei belegter Quelle)
+  → 503, wenn ANTHROPIC_API_KEY fehlt
 ```
 
 ## Deployment
 
-Vercel (Next.js App Router). `DATABASE_URL` als Environment-Variable setzen.
-`prisma generate` laeuft ueber den `postinstall`-Hook automatisch mit.
+Zwei Wege:
+
+- **Vercel** (Next.js App Router): `DATABASE_URL` als Environment-Variable
+  setzen; `prisma generate` läuft über den `postinstall`-Hook mit.
+- **Co-Host auf eigenem Server** (Docker, `docker-compose.cohost.yml`) — der
+  aktive Weg für dieses Projekt:
+
+  ```bash
+  cd /opt/ladeplanner
+  git pull origin claude/new-project-kickoff-69wgyp
+  docker compose -f docker-compose.cohost.yml up -d --build
+  ```
+
+  Keys kommen aus `/opt/ladeplanner/.env` und werden in der Compose-
+  `environment:`-Liste durchgereicht: `DATABASE_URL`, `TOMTOM_API_KEY`,
+  `ANTHROPIC_API_KEY` (Standzeit-Knopf), optional `GOOGLE_PLACES_API_KEY`,
+  `NTFY_TOPIC`, `CRON_SECRET`. **Neue Env-Variable → auch in die Compose-Liste
+  eintragen**, sonst erreicht sie den Container nicht.
+
+Arbeitsanweisungen für Claude-Sessions (Regeln, Dateien, Konventionen):
+[`CLAUDE.md`](CLAUDE.md).
