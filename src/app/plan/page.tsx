@@ -27,7 +27,7 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
 
   return (
     <main className="wrap" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <div className="bloom" style={{ top: 80, left: -80, width: 420, height: 340, opacity: 0.95 }} />
+      <div className="bloom" style={{ top: -60, left: -70, width: 400, height: 320, opacity: 0.6 }} />
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flex: "none" }}>
         <Link href="/" className="glyph" aria-label="Zurück" style={{ color: "var(--fg)", width: 32, height: 32 }}>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m15 6-6 6 6 6" /></svg>

@@ -78,9 +78,6 @@ export default function Home() {
         <button type="submit" className="btn" style={{ marginTop: 22 }}>
           Laden finden {IconArrow}
         </button>
-        <p className="mono" style={{ color: "var(--faint)", fontSize: 10.5, lineHeight: 1.5, margin: "12px 0 0", textAlign: "center" }}>
-          Ladepunkte in Gehweite deines Ziels — passend zu Auto und Aufenthalt. Belegung live.
-        </p>
       </form>
     </main>
   );

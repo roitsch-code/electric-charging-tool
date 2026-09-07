@@ -69,7 +69,6 @@ export default function ResultView({
     setTimeout(() => { programmatic.current = false; }, 420);
   }, []);
 
-  // Auswahl (Pin-Tap oder Karte) -> Karussell zentriert die Karte.
   useEffect(() => { scrollToIndex(selected); }, [selected, scrollToIndex]);
 
   const onScroll = useCallback(() => {
@@ -93,74 +92,87 @@ export default function ResultView({
   const sel = options[selected]!;
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, gap: 10 }}>
-      {/* variabler Freiraum oben — Content sitzt unten (wie Startseite) */}
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, gap: 11 }}>
       <div style={{ flex: "1 1 auto", minHeight: 8 }} />
 
+      {/* Header — lesbar, klare Hierarchie */}
       <div style={{ flex: "none" }}>
-        <div className="kicker">Ziel</div>
-        <h1 className="display" style={{ fontSize: 22, fontWeight: 300, margin: "2px 0 0", lineHeight: 1.05, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{dest.name ?? "Ziel"}</h1>
-        <div className="mono" style={{ fontSize: 10.5, color: "var(--faint)", marginTop: 4 }}>
-          {candidateCount} OPTION(EN){dwellLabel ? ` · ${dwellLabel}` : ""} · {demandLabel}
+        <div className="mono" style={{ fontSize: 10.5, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--muted)" }}>Ziel</div>
+        <h1 className="display" style={{ fontSize: 24, fontWeight: 300, margin: "3px 0 0", lineHeight: 1.08, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{dest.name ?? "Ziel"}</h1>
+        <div className="mono" style={{ fontSize: 11, color: "var(--muted)", marginTop: 5 }}>
+          {candidateCount} Option{candidateCount === 1 ? "" : "en"}{dwellLabel ? ` · ${dwellLabel}` : ""} · {demandLabel}
         </div>
       </div>
 
-      {/* echte, sterilisierte Karte — saugt Restplatz, aber gedeckelt (quadratisch), genordet */}
-      <div style={{ flex: "0 0 auto", height: "min(36vh, 280px)", minHeight: 180 }}>
+      {/* echte, genordete Karte */}
+      <div style={{ flex: "0 0 auto", height: "min(33vh, 258px)", minHeight: 172 }}>
         <ResultMap dest={dest} options={options} selected={selected} onSelect={setSelected} />
       </div>
 
-      {/* seitlich swipe-bare Optionen; Karte reagiert */}
+      {/* Optionen — volle Breite, swipe-bar, mit Standzeit */}
       <div
         ref={scrollerRef}
         onScroll={onScroll}
         className="hide-scrollbar"
-        style={{ flex: "none", display: "flex", gap: 10, overflowX: "auto", scrollSnapType: "x mandatory", scrollPaddingLeft: 2, WebkitOverflowScrolling: "touch" }}
+        style={{ flex: "none", display: "flex", overflowX: "auto", scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
       >
         {options.map((o, i) => {
           const st = STATUS[o.status] ?? STATUS.unknown!;
-          const active = i === selected;
           const live = relTime(o.statusUpdatedAt);
           return (
-            <button
-              key={o.evseId}
-              type="button"
-              onClick={() => setSelected(i)}
-              className="card"
-              style={{
-                scrollSnapAlign: "center", flex: "0 0 88%", textAlign: "left", cursor: "pointer",
-                padding: "13px 15px", background: active ? "rgba(255,126,90,0.07)" : "rgba(22,22,27,0.72)",
-                borderColor: active ? "rgba(255,126,90,0.5)" : "var(--line)",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-                <span style={{ fontSize: 16, fontWeight: 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.name}</span>
-                <span className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: st.color, flex: "none" }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: st.color }} />{st.label}
-                </span>
-              </div>
-              <div className="metrics" style={{ marginTop: 12, gap: 20 }}>
-                <div className="metric"><div className="v">{o.atDestination ? "0" : o.walkingM}<small> m</small></div><div className="k">{o.atDestination ? "am Ziel" : "Fußweg"}</div></div>
-                <div className="metric"><div className="v">{o.usablePowerKw}<small> kW</small></div><div className="k">{o.connector === "dc" ? "Gleichstrom" : "Wechselstrom"}</div></div>
-                <div className="metric"><div className="v" style={{ color: st.color }}>{o.freePoints}<small>/{o.totalPoints}</small></div><div className="k">{st.label.toLowerCase()}</div></div>
-              </div>
-              <div className="mono" style={{ fontSize: 9.5, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--faint)", marginTop: 10 }}>
-                {live ? `● Live · ${live}` : "Keine Realtime-Daten"}
-              </div>
-            </button>
+            <div key={o.evseId} style={{ scrollSnapAlign: "center", flex: "0 0 100%", minWidth: "100%" }}>
+              <button
+                type="button"
+                onClick={() => setSelected(i)}
+                className="card"
+                style={{ width: "100%", textAlign: "left", cursor: "pointer", padding: "13px 15px", background: "rgba(22,22,27,0.72)" }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                  <span style={{ fontSize: 16, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.name}</span>
+                  <span className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 600, color: st.color, flex: "none" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: st.color }} />{st.label}
+                  </span>
+                </div>
+                <div className="metrics" style={{ marginTop: 12, gap: 22 }}>
+                  <div className="metric"><div className="v">{o.atDestination ? "0" : o.walkingM}<small> m</small></div><div className="k">{o.atDestination ? "am Ziel" : "Fußweg"}</div></div>
+                  <div className="metric"><div className="v">{o.usablePowerKw}<small> kW</small></div><div className="k">{o.connector === "dc" ? "Gleichstrom" : "Wechselstrom"}</div></div>
+                  <div className="metric"><div className="v" style={{ color: st.color }}>{o.freePoints}<small>/{o.totalPoints}</small></div><div className="k">Ladepunkte</div></div>
+                </div>
+                <div className="mono" style={{ fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", color: "#7C7C85", marginTop: 10 }}>
+                  {live ? `● Live · ${live}` : "Keine Realtime-Daten"}
+                </div>
+                <div style={{ marginTop: 11 }}>
+                  <NightBadge lat={o.lat} lng={o.lng} />
+                </div>
+              </button>
+            </div>
           );
         })}
       </div>
 
-      {/* Aktionen für die ausgewählte Option */}
-      <div style={{ flex: "none" }}>
-        <NightBadge key={sel.evseId} lat={sel.lat} lng={sel.lng} />
-        <div style={{ display: "flex", gap: 9, marginTop: 10 }}>
-          <StartTripButton destLat={dest.lat} destLng={dest.lng} destName={dest.name} dwellMinutes={dwellMinutes} returnTripKm={returnTripKm} />
-          <a className="btn ghost" href={walkFromChargerUrl({ lat: sel.lat, lng: sel.lng } as never, dest)} target="_blank" rel="noopener" style={{ flex: "none", padding: "0 16px" }}>
-            Fußweg
-          </a>
+      {/* Punkt-Indikator */}
+      {options.length > 1 && (
+        <div style={{ flex: "none", display: "flex", justifyContent: "center", alignItems: "center", gap: 7 }}>
+          {options.map((o, i) => (
+            <button
+              key={o.evseId}
+              type="button"
+              aria-label={`Option ${i + 1}`}
+              onClick={() => setSelected(i)}
+              style={{ padding: 4, background: "none", border: 0, cursor: "pointer", display: "flex" }}
+            >
+              <span style={{ display: "block", height: 7, width: i === selected ? 20 : 7, borderRadius: 4, background: i === selected ? "var(--coral)" : "var(--faint)", transition: "width 0.2s, background 0.2s" }} />
+            </button>
+          ))}
         </div>
+      )}
+
+      {/* Aktionen für die ausgewählte Option */}
+      <div style={{ flex: "none", display: "flex", gap: 9 }}>
+        <StartTripButton destLat={dest.lat} destLng={dest.lng} destName={dest.name} dwellMinutes={dwellMinutes} returnTripKm={returnTripKm} />
+        <a className="btn ghost" href={walkFromChargerUrl({ lat: sel.lat, lng: sel.lng } as never, dest)} target="_blank" rel="noopener" style={{ flex: "none", padding: "0 16px" }}>
+          Fußweg
+        </a>
       </div>
     </div>
   );

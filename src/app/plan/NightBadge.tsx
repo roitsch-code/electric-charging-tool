@@ -6,10 +6,10 @@ type Verdict = "free" | "limited" | "closed" | "unknown";
 type Rule = { verdict: Verdict; label: string };
 
 const STYLE: Record<Verdict, { color: string; bg: string; border: string }> = {
-  free: { color: "#CFE9DA", bg: "rgba(95,216,146,0.08)", border: "rgba(95,216,146,0.22)" },
-  limited: { color: "#EAD3A6", bg: "rgba(224,162,74,0.08)", border: "rgba(224,162,74,0.22)" },
-  closed: { color: "#EDC0C0", bg: "rgba(224,91,91,0.08)", border: "rgba(224,91,91,0.22)" },
-  unknown: { color: "var(--muted)", bg: "rgba(255,255,255,0.03)", border: "var(--line)" },
+  free: { color: "#8FE3B3", bg: "rgba(95,216,146,0.10)", border: "rgba(95,216,146,0.28)" },
+  limited: { color: "#EEC486", bg: "rgba(224,162,74,0.10)", border: "rgba(224,162,74,0.28)" },
+  closed: { color: "#F0A6A6", bg: "rgba(224,91,91,0.10)", border: "rgba(224,91,91,0.28)" },
+  unknown: { color: "#B9B9C2", bg: "rgba(255,255,255,0.05)", border: "rgba(255,255,255,0.12)" },
 };
 
 const MoonIcon = (c: string) => (
@@ -33,10 +33,10 @@ export default function NightBadge({ lat, lng }: { lat: number; lng: number }) {
   const s = STYLE[v];
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 12, padding: "9px 12px", borderRadius: 11, background: s.bg, border: `1px solid ${s.border}` }}>
-      <span style={{ flex: "none", display: "flex" }}>{MoonIcon(v === "unknown" || loading ? "var(--muted)" : s.color)}</span>
-      <span style={{ fontSize: 12.5, color: loading ? "var(--muted)" : s.color, lineHeight: 1.35 }}>
-        {loading ? "Standzeit-Regel wird geprüft…" : (rule?.label ?? "Standzeit unbekannt")}
+    <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 12px", borderRadius: 11, background: s.bg, border: `1px solid ${s.border}` }}>
+      <span style={{ flex: "none", display: "flex" }}>{MoonIcon(loading ? "#B9B9C2" : s.color)}</span>
+      <span style={{ fontSize: 13, color: loading ? "#B9B9C2" : s.color, lineHeight: 1.35, fontWeight: 500 }}>
+        {loading ? "Standzeit wird geprüft…" : (rule?.label ?? "Standzeit unbekannt")}
       </span>
     </div>
   );
