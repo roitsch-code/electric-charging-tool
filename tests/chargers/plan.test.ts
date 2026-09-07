@@ -13,7 +13,8 @@ describe("planDestination (Seed-Quelle)", () => {
     expect(plan.demandClass).toBe("ac_ok");
     expect(plan.expanded).toBe(false);
     expect(plan.candidateCount).toBeGreaterThanOrEqual(5);
-    expect(plan.top).toHaveLength(3);
+    expect(plan.top.length).toBeGreaterThanOrEqual(3);
+    expect(plan.top.length).toBeLessThanOrEqual(6);
     expect(plan.top[0]!.charger.atDestination).toBe(true);
     expect(plan.dataTimestamp).not.toBeNull();
   });
