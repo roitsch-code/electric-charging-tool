@@ -54,7 +54,7 @@ export async function planDestination(
     }
   }
 
-  const top = ranked.slice(0, 3);
+  const top = ranked.slice(0, 6);
   return {
     destination,
     demandClass: demand,

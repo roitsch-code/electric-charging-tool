@@ -57,8 +57,8 @@ async function Result({ coords, input }: { coords: { lat: number; lng: number; n
     );
   }
 
-  // Karte + Swipe zeigen Ziel und die Top-3-Optionen (Konzept: nicht überladen).
-  const options: ViewCharger[] = plan.top.slice(0, 3).map((r) => ({
+  // Karte + Swipe zeigen die Top-Optionen (mehrere, damit man wirklich wählen kann).
+  const options: ViewCharger[] = plan.top.map((r) => ({
     evseId: r.charger.evseId,
     name: r.charger.name,
     lat: r.charger.lat,

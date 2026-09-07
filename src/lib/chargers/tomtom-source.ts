@@ -17,7 +17,7 @@ import type { Charger, ChargerSource } from "./types";
  */
 
 const BASE = "https://api.tomtom.com";
-const MAX_LIVE_LOOKUPS = 12;
+const MAX_LIVE_LOOKUPS = 20;
 const TIMEOUT_MS = 7000;
 
 interface TTConnector {
@@ -97,40 +97,62 @@ export class TomTomChargerSource implements ChargerSource {
       .filter((x): x is { r: TTResult; lat: number; lng: number; d: number } => x !== null)
       .sort((a, b) => a.d - b.d);
 
-    // Live-Belegung nur für die nächsten N (Kosten deckeln).
-    const liveSet = new Set(withDist.slice(0, MAX_LIVE_LOOKUPS).map((x) => x.r));
+    // TomTom liefert denselben Standort oft als mehrere Einträge (Connector-
+    // Gruppen/Betreiber). Nach Standort zusammenfassen -> eine Station mit
+    // allen Ladepunkten statt vieler 1/1-Krümel. Schlüssel: Adresse, sonst
+    // gerundete Koordinaten.
+    const groups = new Map<string, { items: typeof withDist; lat: number; lng: number; d: number }>();
+    for (const x of withDist) {
+      const key = (x.r.address?.freeformAddress ?? `${x.lat.toFixed(5)},${x.lng.toFixed(5)}`).toLowerCase();
+      const g = groups.get(key);
+      if (g) g.items.push(x);
+      else groups.set(key, { items: [x], lat: x.lat, lng: x.lng, d: x.d });
+    }
+    const ordered = [...groups.values()].sort((a, b) => a.d - b.d);
+
+    // Live-Abruf-Budget über alle Gruppen (nächste zuerst).
+    let budget = MAX_LIVE_LOOKUPS;
 
     return Promise.all(
-      withDist.map(async ({ r, lat, lng }): Promise<Charger> => {
-        const connectors = r.chargingPark?.connectors ?? [];
+      ordered.map(async (g): Promise<Charger> => {
+        const first = g.items[0]!.r;
+        const connectors = g.items.flatMap((x) => x.r.chargingPark?.connectors ?? []);
         const connector = connectorKind(connectors);
-        const operator = r.poi?.name;
-        const address = r.address?.freeformAddress;
-        const availId = r.dataSources?.chargingAvailability?.id;
+        const operator = first.poi?.name;
+        const address = first.address?.freeformAddress;
 
-        let freePoints: number | undefined;
-        let totalPoints: number | undefined = connectors.length || undefined;
-        let status: Charger["status"] = "unknown";
-        let statusUpdatedAt: string | undefined;
-
-        if (availId && liveSet.has(r)) {
+        // Live-Belegung aller Einträge dieser Gruppe aufsummieren.
+        let free = 0, total = 0, haveLive = false;
+        for (const x of g.items) {
+          const availId = x.r.dataSources?.chargingAvailability?.id;
+          if (!availId || budget <= 0) continue;
+          budget -= 1;
           try {
             const agg = aggregateTomTomStatus(await fetchTomTomAvailability(availId, this.key));
-            status = agg.status;
-            freePoints = agg.available;
-            totalPoints = agg.total || totalPoints;
-            statusUpdatedAt = new Date().toISOString();
+            free += agg.available;
+            total += agg.total;
+            haveLive = true;
           } catch {
-            /* Live-Abruf fehlgeschlagen -> nur statisch */
+            /* einzelner Live-Abruf fehlgeschlagen -> ignorieren */
           }
         }
 
+        const freePoints = haveLive ? free : undefined;
+        const totalPoints = haveLive && total > 0 ? total : connectors.length || undefined;
+        const status: Charger["status"] = !haveLive
+          ? "unknown"
+          : free > 0
+            ? "available"
+            : total > 0
+              ? "occupied"
+              : "unknown";
+
         const sz = swdStandzeit(operator, connector);
         return {
-          evseId: `TT:${r.id ?? `${lat},${lng}`}`,
+          evseId: `TT:${first.id ?? `${g.lat},${g.lng}`}`,
           name: address ?? operator ?? "Ladepunkt",
-          lat,
-          lng,
+          lat: g.lat,
+          lng: g.lng,
           operator,
           powerKw: maxPowerKw(connectors),
           connector,
@@ -138,7 +160,7 @@ export class TomTomChargerSource implements ChargerSource {
           address,
           source: "tomtom",
           status,
-          statusUpdatedAt,
+          statusUpdatedAt: haveLive ? new Date().toISOString() : undefined,
           freePoints,
           totalPoints,
           standzeitLabel: sz?.label,
