@@ -65,12 +65,18 @@ async function Result({ coords, input }: { coords: { lat: number; lng: number; n
     lng: r.charger.lng,
     status: r.charger.status ?? "unknown",
     connector: r.charger.connector,
+    powerKw: r.charger.powerKw,
     usablePowerKw: r.usablePowerKw,
     walkingM: r.walkingM,
     atDestination: r.charger.atDestination ?? false,
     statusUpdatedAt: r.charger.statusUpdatedAt,
     totalPoints: r.charger.totalPoints ?? 1,
-    freePoints: r.charger.freePoints ?? (r.charger.status === "available" ? 1 : 0),
+    // freePoints nur wenn bekannt; null = keine Live-Belegung (kein Fake).
+    freePoints:
+      r.charger.freePoints ??
+      (r.charger.status === "available" ? 1 : r.charger.status === "occupied" || r.charger.status === "outoforder" ? 0 : null),
+    standzeitLabel: r.charger.standzeitLabel ?? null,
+    standzeitVerdict: r.charger.standzeitVerdict ?? null,
   }));
 
   return (

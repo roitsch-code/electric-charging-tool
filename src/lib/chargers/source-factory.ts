@@ -1,6 +1,7 @@
 import type { ChargerSource } from "./types";
 import { seedSource } from "./seed";
 import { PostgisChargerSource } from "./postgis-source";
+import { CuratedChargerSource, DUS_HOME_CHARGERS } from "./curated-dus";
 
 /**
  * Waehlt die Ladepunkt-Quelle. Standard ist der Seed (M3). Erst wenn
@@ -11,8 +12,8 @@ import { PostgisChargerSource } from "./postgis-source";
  * importieren es nicht, deshalb ist der statische Prisma-Import hier ok.
  */
 export function getChargerSource(): ChargerSource {
-  if (process.env.CHARGER_SOURCE === "postgis") {
-    return new PostgisChargerSource();
-  }
-  return seedSource;
+  const base: ChargerSource =
+    process.env.CHARGER_SOURCE === "postgis" ? new PostgisChargerSource() : seedSource;
+  // Verifizierte Zuhause-Daten (Düsseldorf) haben Vorrang; sonst normale Quelle.
+  return new CuratedChargerSource(DUS_HOME_CHARGERS, base);
 }

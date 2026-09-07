@@ -13,12 +13,19 @@ export type ViewCharger = {
   lng: number;
   status: string;
   connector: string;
+  powerKw: number;
   usablePowerKw: number;
   walkingM: number;
   atDestination: boolean;
   statusUpdatedAt?: string;
   totalPoints: number;
-  freePoints: number;
+  freePoints: number | null;
+  standzeitLabel: string | null;
+  standzeitVerdict: "free" | "limited" | "closed" | "unknown" | null;
+};
+
+const STANDZEIT_COLOR: Record<string, string> = {
+  free: "#8FE3B3", limited: "#EEC486", closed: "#F0A6A6", unknown: "#B9B9C2",
 };
 
 type Dest = { lat: number; lng: number; name?: string };
@@ -135,13 +142,25 @@ export default function ResultView({
                 </div>
                 <div className="metrics" style={{ marginTop: 12, gap: 22 }}>
                   <div className="metric"><div className="v">{o.atDestination ? "0" : o.walkingM}<small> m</small></div><div className="k">{o.atDestination ? "am Ziel" : "Fußweg"}</div></div>
-                  <div className="metric"><div className="v">{o.usablePowerKw}<small> kW</small></div><div className="k">{o.connector === "dc" ? "Gleichstrom" : "Wechselstrom"}</div></div>
-                  <div className="metric"><div className="v" style={{ color: st.color }}>{o.freePoints}<small>/{o.totalPoints}</small></div><div className="k">Ladepunkte</div></div>
+                  <div className="metric"><div className="v">{o.powerKw}<small> kW</small></div><div className="k">{o.connector === "dc" ? "Gleichstrom" : "Wechselstrom"}</div></div>
+                  <div className="metric">
+                    {o.freePoints != null
+                      ? <div className="v" style={{ color: st.color }}>{o.freePoints}<small>/{o.totalPoints}</small></div>
+                      : <div className="v">{o.totalPoints}<small> ×</small></div>}
+                    <div className="k">{o.freePoints != null ? "frei/gesamt" : "Ladepunkte"}</div>
+                  </div>
                 </div>
                 <div className="mono" style={{ fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", color: "#7C7C85", marginTop: 10 }}>
-                  {live ? `● Live · ${live}` : "Keine Realtime-Daten"}
+                  {live ? `● Live · ${live}` : o.freePoints != null ? "Keine Realtime-Daten" : "Belegung: keine Live-Daten"}
                 </div>
-                <NightBadge lat={o.lat} lng={o.lng} />
+                {o.standzeitLabel ? (
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 11 }}>
+                    <span className="mono" style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--faint)", flex: "none" }}>Standzeit</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: STANDZEIT_COLOR[o.standzeitVerdict ?? "unknown"] }}>{o.standzeitLabel}</span>
+                  </div>
+                ) : (
+                  <NightBadge lat={o.lat} lng={o.lng} />
+                )}
               </button>
             </div>
           );

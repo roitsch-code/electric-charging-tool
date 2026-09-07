@@ -26,6 +26,10 @@ export interface Charger {
   /** Freie / gesamte Ladepunkte an dieser Station, falls bekannt (AFIR-Aggregat). */
   freePoints?: number;
   totalPoints?: number;
+  /** Verifizierte Standzeit-/Nachtregel (z. B. kuratiert für Düsseldorf/SWD),
+   *  umgeht die OSM-Overpass-Abfrage, wenn gesetzt. */
+  standzeitLabel?: string;
+  standzeitVerdict?: "free" | "limited" | "closed" | "unknown";
 }
 
 /** Ein bewerteter Ladepunkt mit allen Zwischenwerten (nachvollziehbar). */

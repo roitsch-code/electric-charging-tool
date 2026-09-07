@@ -2,13 +2,13 @@
 
 import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
-import type { Map as LMap, Marker as LMarker, Point as LPoint } from "leaflet";
+import type { Map as LMap, Marker as LMarker } from "leaflet";
 
 export type MapOpt = {
   lat: number;
   lng: number;
   status: string;
-  freePoints: number;
+  freePoints: number | null;
   totalPoints: number;
 };
 
@@ -34,7 +34,7 @@ function pinHtml(o: MapOpt, active: boolean, off: Off): string {
   return `<div style="transform:translate(${off.dx}px,${off.dy}px);width:64px;display:flex;flex-direction:column;align-items:center;">
     <div style="transform:scale(${scale});transform-origin:center bottom;display:flex;align-items:center;gap:3px;padding:3px 8px 3px 5px;border-radius:10px;background:${bg};${bdr}${ring}">
       <svg viewBox="0 0 24 24" width="12" height="12" fill="#0C0C0E" style="flex:none"><path d="M13 2 5 13h6l-1 9 9-12h-6z"/></svg>
-      <span style="font:600 12.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#0C0C0E;white-space:nowrap;">${o.freePoints}/${o.totalPoints}</span>
+      <span style="font:600 12.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#0C0C0E;white-space:nowrap;">${o.freePoints != null ? `${o.freePoints}/${o.totalPoints}` : `${o.totalPoints}×`}</span>
     </div>
     <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${bg};margin-top:-1px;transform:scale(${scale});transform-origin:center top;"></div>
   </div>`;
