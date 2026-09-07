@@ -40,9 +40,11 @@ export class PostgisChargerSource implements ChargerSource {
   async within(center: Coordinates, radiusM: number): Promise<Charger[]> {
     const point = Prisma.sql`ST_SetSRID(ST_MakePoint(${center.lng}, ${center.lat}), 4326)::geography`;
 
-    const rows = await prisma.$queryRaw<Row[]>`
+    // total_points wird erst vom AFIR-Import angelegt. Damit die App auch OHNE
+    // die Spalte läuft, robust abfragen: mit Spalte versuchen, sonst NULL.
+    const query = (totalPoints: Prisma.Sql) => prisma.$queryRaw<Row[]>`
       SELECT c.evse_id, c.lat, c.lng, c.operator, c.power_kw, c.connector,
-             c.connector_type, c.address, c.source, c.total_points,
+             c.connector_type, c.address, c.source, ${totalPoints} AS total_points,
              s.status AS status, s.last_updated AS status_updated_at,
              ST_Distance(
                ST_SetSRID(ST_MakePoint(c.lng, c.lat), 4326)::geography,
@@ -58,6 +60,13 @@ export class PostgisChargerSource implements ChargerSource {
       ORDER BY dist_m ASC
       LIMIT 200
     `;
+
+    let rows: Row[];
+    try {
+      rows = await query(Prisma.sql`c.total_points`);
+    } catch {
+      rows = await query(Prisma.sql`NULL::int`);
+    }
 
     return rows.map((r) => ({
       evseId: r.evse_id,
