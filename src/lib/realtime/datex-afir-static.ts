@@ -1,3 +1,4 @@
+import { XMLParser } from "fast-xml-parser";
 import type { AvailabilitySnapshot } from "@/lib/availability/types";
 import type { Charger, ChargerStatus } from "@/lib/chargers/types";
 import type { AfirDynamicResult } from "./datex-afir";
@@ -89,6 +90,11 @@ function tablePublications(root: Json): Json[] {
 }
 
 export function parseAfirStatic(input: string | Json): AfirStaticResult {
+  // Anbieter liefern DATEX II v3 als JSON (Road B.V.) ODER XML (Smartlab/
+  // ladenetz). XML automatisch erkennen und passend parsen.
+  if (typeof input === "string" && input.trimStart().startsWith("<")) {
+    return parseAfirStaticXml(input);
+  }
   const root: Json = typeof input === "string" ? (safeParse(input) ?? {}) : input;
   const points: AfirStaticPoint[] = [];
   let publicationTime: string | null = null;
@@ -150,6 +156,130 @@ function siteName(site: Json): string | null {
   return [line, city].filter(Boolean).join(", ") || city || null;
 }
 
+// ---------------------------------------------------------------------------
+// XML-Variante (Smartlab/ladenetz), DATEX II v3, Standard-Elementnamen.
+// Struktur (verifiziert 2026-09):
+//   messageContainer.payload.energyInfrastructureTable[]
+//     .energyInfrastructureSite[]
+//       .locationReference.coordinatesForDisplay { latitude, longitude }
+//       .energyInfrastructureStation[]
+//         .refillPoint[]  (@_type ns11:ElectricChargingPoint)
+//           @_id / externalIdentifier            -> idG / evseId
+//           connector[].maxPowerAtSocket (Watt)  -> Leistung
+//           connector[].chargingMode / connectorType -> AC | DC
+//           locationReference._locationReferenceExtension.facilityLocation.address
+// ---------------------------------------------------------------------------
+
+/** Text aus einem XML-Knoten: direkter Wert oder { "#text": … } (mit Attributen). */
+function xtext(v: unknown): string | null {
+  if (v == null) return null;
+  if (typeof v === "object") {
+    const t = (v as Record<string, unknown>)["#text"];
+    return t == null ? null : String(t);
+  }
+  return String(v);
+}
+
+/** MultilingualString: .values.value(.#text) — value kann Array sein. */
+function xFirstValue(node: unknown): string | null {
+  const value = asObj(asObj(node).values).value;
+  for (const entry of asArray(value)) {
+    const t = xtext(entry);
+    if (t) return t;
+  }
+  return null;
+}
+
+function xAddress(cp: Json): string | null {
+  const addr = asObj(
+    asObj(asObj(asObj(cp.locationReference)._locationReferenceExtension).facilityLocation).address,
+  );
+  if (Object.keys(addr).length === 0) return null;
+  let street: string | null = null;
+  let houseNr: string | null = null;
+  for (const line of asArray(addr.addressLine)) {
+    const o = asObj(line);
+    const type = str(o.type);
+    const text = xtext(asObj(asObj(o.text).values).value) ?? xFirstValue(o.text);
+    if (type === "street") street = text;
+    else if (type === "houseNumber") houseNr = text;
+  }
+  const city = xtext(asObj(asObj(asObj(addr.city).values).value)) ?? xFirstValue(addr.city);
+  const streetPart = [street, houseNr].filter(Boolean).join(" ");
+  return [streetPart, city].filter(Boolean).join(", ") || null;
+}
+
+/** AC vs DC aus connector.chargingMode / connectorType. */
+function xConnectorKind(connectors: unknown[]): "ac" | "dc" {
+  for (const c of connectors) {
+    const o = asObj(c);
+    const mode = (str(o.chargingMode) ?? "").toLowerCase();
+    const type = (str(o.connectorType) ?? "").toLowerCase();
+    if (mode.includes("dc") || type.includes("combo") || type.includes("chademo")) return "dc";
+  }
+  return "ac";
+}
+
+function xMaxPowerKw(cp: Json, connectors: unknown[]): number {
+  let maxW = num(cp.availableChargingPower) ?? 0;
+  for (const c of connectors) {
+    const w = num(asObj(c).maxPowerAtSocket) ?? 0;
+    if (w > maxW) maxW = w;
+  }
+  return Math.round(maxW / 1000);
+}
+
+export function parseAfirStaticXml(xml: string): AfirStaticResult {
+  const parser = new XMLParser({
+    removeNSPrefix: true,
+    ignoreAttributes: false,
+    attributeNamePrefix: "@_",
+    parseTagValue: true,
+    parseAttributeValue: false,
+    trimValues: true,
+  });
+  const root = asObj(parser.parse(xml));
+  const payload = asObj(asObj(root.messageContainer).payload);
+  const publicationTime = str(payload.publicationTime);
+
+  const points: AfirStaticPoint[] = [];
+  for (const table of asArray(payload.energyInfrastructureTable)) {
+    for (const site of asArray(asObj(table).energyInfrastructureSite)) {
+      const s = asObj(site);
+      const siteCoords = asObj(asObj(s.locationReference).coordinatesForDisplay);
+      const sLat = num(siteCoords.latitude);
+      const sLng = num(siteCoords.longitude);
+      const operator = xFirstValue(asObj(s.operator).name);
+
+      for (const station of asArray(s.energyInfrastructureStation)) {
+        for (const rp of asArray(asObj(station).refillPoint)) {
+          const cp = asObj(rp);
+          const pc = asObj(asObj(cp.locationReference).coordinatesForDisplay);
+          const lat = num(pc.latitude) ?? sLat;
+          const lng = num(pc.longitude) ?? sLng;
+          if (lat === null || lng === null) continue;
+
+          const pointId = xtext(cp["@_id"]) ?? xtext(cp.externalIdentifier);
+          if (!pointId) continue;
+          const connectors = asArray(cp.connector);
+          points.push({
+            pointId,
+            evseId: xtext(cp.externalIdentifier) ?? pointId,
+            lat,
+            lng,
+            connector: xConnectorKind(connectors),
+            powerKw: xMaxPowerKw(cp, connectors),
+            operator,
+            name: xAddress(cp),
+          });
+        }
+      }
+    }
+  }
+
+  return { publicationTime, informationStatus: "xml", points };
+}
+
 /**
  * Aggregiert die AFIR-Static-Ladepunkte je Standort (gleiche Koordinaten) zu
  * einer Station mit Anzahl (`totalPoints`), max. Leistung und Stromart
@@ -177,7 +307,8 @@ export function aggregateAfirStations(points: AfirStaticPoint[]): Charger[] {
 
   return [...groups.entries()].map(([key, g]) => ({
     evseId: `AFIR:${key}`,
-    name: g.operator ?? g.name ?? "Ladepunkt",
+    // Adresse als Anzeigename bevorzugen (Smartlab-operator ist nur ein Code).
+    name: g.name ?? g.operator ?? "Ladepunkt",
     lat: g.lat,
     lng: g.lng,
     operator: g.operator ?? undefined,

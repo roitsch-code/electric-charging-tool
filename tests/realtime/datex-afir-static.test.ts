@@ -145,6 +145,62 @@ describe("buildAfirSnapshots (Join Static + Dynamic)", () => {
   });
 });
 
+describe("parseAfirStatic (XML, Smartlab/ladenetz)", () => {
+  const XML = `<?xml version="1.0"?>
+<ns2:messageContainer xmlns:ns2="http://datex2.eu/schema/3/messageContainer">
+ <payload publicationTime="ignored">
+  <publicationTime>2026-09-07T01:30:07Z</publicationTime>
+  <energyInfrastructureTable id="DEAHF">
+   <energyInfrastructureSite id="S1">
+    <locationReference type="ns9:PointLocation">
+     <coordinatesForDisplay><latitude>51.230757</latitude><longitude>6.810093</longitude></coordinatesForDisplay>
+    </locationReference>
+    <operator><name><values><value lang="en">DEACW</value></values></name></operator>
+    <energyInfrastructureStation id="ST1">
+     <refillPoint id="P1" type="ns11:ElectricChargingPoint">
+      <externalIdentifier>DE*SWD*E1</externalIdentifier>
+      <availableChargingPower>300000</availableChargingPower>
+      <connector><connectorType>iec62196T2Combo</connectorType><chargingMode>mode4DC</chargingMode><maxPowerAtSocket>300000</maxPowerAtSocket></connector>
+      <locationReference><_locationReferenceExtension><facilityLocation><address>
+        <postcode>40235</postcode>
+        <city><values><value lang="de">Düsseldorf</value></values></city>
+        <addressLine order="1"><type>street</type><text><values><value lang="de">Ackerstraße</value></values></text></addressLine>
+        <addressLine order="2"><type>houseNumber</type><text><values><value lang="de">203</value></values></text></addressLine>
+      </address></facilityLocation></_locationReferenceExtension></locationReference>
+     </refillPoint>
+     <refillPoint id="P2" type="ns11:ElectricChargingPoint">
+      <externalIdentifier>DE*SWD*E2</externalIdentifier>
+      <connector><connectorType>iec62196T2Combo</connectorType><chargingMode>mode4DC</chargingMode><maxPowerAtSocket>300000</maxPowerAtSocket></connector>
+     </refillPoint>
+    </energyInfrastructureStation>
+   </energyInfrastructureSite>
+  </energyInfrastructureTable>
+ </payload>
+</ns2:messageContainer>`;
+
+  it("parst XML automatisch (Namespaces, Elementstruktur)", () => {
+    const r = parseAfirStatic(XML);
+    expect(r.points).toHaveLength(2);
+    const p = r.points[0]!;
+    expect(p.lat).toBeCloseTo(51.230757, 5);
+    expect(p.lng).toBeCloseTo(6.810093, 5);
+    expect(p.connector).toBe("dc"); // mode4DC / Combo
+    expect(p.powerKw).toBe(300); // 300000 W
+    expect(p.evseId).toBe("DE*SWD*E1");
+    expect(p.pointId).toBe("P1");
+    expect(p.name).toBe("Ackerstraße 203, Düsseldorf");
+  });
+
+  it("aggregiert die XML-Punkte zu einer Station mit Zähler", () => {
+    const stations = aggregateAfirStations(parseAfirStatic(XML).points);
+    expect(stations).toHaveLength(1);
+    expect(stations[0]!.totalPoints).toBe(2);
+    expect(stations[0]!.connector).toBe("dc");
+    expect(stations[0]!.powerKw).toBe(300);
+    expect(stations[0]!.name).toBe("Ackerstraße 203, Düsseldorf");
+  });
+});
+
 describe("aggregateAfirStations", () => {
   it("aggregiert Punkte je Standort zu Stationen (Anzahl, max. Leistung, DC gewinnt)", () => {
     const stations = aggregateAfirStations([
