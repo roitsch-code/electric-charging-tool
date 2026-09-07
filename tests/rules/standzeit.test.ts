@@ -32,10 +32,16 @@ describe("cityStandzeit", () => {
     expect(hasCityRule("Aachen")).toBe(true);
   });
 
+  it("Emmerich: Innenstadt-Parkscheibe, nachts frei", () => {
+    expect(cityStandzeit("Emmerich", "ac")?.label).toContain("2 Std");
+    expect(cityStandzeit("Emmerich", "ac")?.label).toContain("frei");
+    expect(cityStandzeit("Emmerich am Rhein", "dc")?.verdict).toBe("free");
+    expect(hasCityRule("Emmerich")).toBe(true);
+  });
+
   it("unbekannte Stadt -> null", () => {
     expect(cityStandzeit("Kleinkleckersdorf", "ac")).toBeNull();
     expect(cityStandzeit(undefined, "ac")).toBeNull();
-    expect(hasCityRule("Emmerich")).toBe(false);
     expect(hasCityRule("Hamburg")).toBe(true);
   });
 });

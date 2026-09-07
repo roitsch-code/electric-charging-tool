@@ -65,6 +65,23 @@ const CITY_RULES: Record<string, (c: Kind) => StandzeitRule> = {
     c === "dc"
       ? { label: "Max. 1 Std (7–21 Uhr) · 21–7 Uhr frei", verdict: "free" }
       : { label: "Max. 2 Std (7–21 Uhr) · 21–7 Uhr frei", verdict: "free" },
+
+  // Emmerich am Rhein: keine eigene E-Ladesäulen-Satzung auffindbar. Öffentlich
+  // lädt man bei Stadtwerke Emmerich (18 Punkte, bis 22 kW AC; emmerich.de,
+  // „E-Mobilität für die Bürgerschaft"). In der bewirtschafteten Innenstadt gilt
+  // Parkscheibe, max. 2 Std, Mo–Fr ~9–19 / Sa 9–14 Uhr -> abends/nachts/So frei
+  // (emmerich.de, „Parkflächen Innenstadt über 1 Std"). An der Säule zusätzlich
+  // StVO Z. 314 „während des Ladevorgangs". Konservativ als Innenstadt-Regel
+  // hinterlegt; außerhalb der Zone greift praktisch nur „während des Ladens".
+  emmerich: () => ({
+    label: "Max. 2 Std mit Parkscheibe (Mo–Sa tags) · abends/nachts frei",
+    verdict: "free",
+  }),
+  // Alias: TomTom liefert die Poststadt teils als „Emmerich am Rhein".
+  emmerichamrhein: () => ({
+    label: "Max. 2 Std mit Parkscheibe (Mo–Sa tags) · abends/nachts frei",
+    verdict: "free",
+  }),
 };
 
 /** Allgemeiner, ehrlich als solcher gekennzeichneter Hinweis, wenn für die
