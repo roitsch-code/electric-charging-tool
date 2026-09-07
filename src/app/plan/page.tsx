@@ -85,6 +85,8 @@ async function Result({ coords, input }: { coords: { lat: number; lng: number; n
       (r.charger.status === "available" ? 1 : r.charger.status === "occupied" || r.charger.status === "outoforder" ? 0 : null),
     standzeitLabel: r.charger.standzeitLabel ?? null,
     standzeitVerdict: r.charger.standzeitVerdict ?? null,
+    standzeitSource: r.charger.standzeitSource ?? null,
+    city: r.charger.city ?? null,
   }));
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import StartTripButton from "./StartTripButton";
 import ResultMap from "./ResultMap";
 import { walkFromChargerUrl } from "@/lib/chargers";
@@ -21,6 +21,8 @@ export type ViewCharger = {
   freePoints: number | null;
   standzeitLabel: string | null;
   standzeitVerdict: "free" | "limited" | "closed" | "unknown" | null;
+  standzeitSource: string | null;
+  city: string | null;
 };
 
 const STANDZEIT_COLOR: Record<string, string> = {
@@ -62,6 +64,40 @@ export default function ResultView({
   returnTripKm: number | null;
 }) {
   const [selected, setSelected] = useState(0);
+  // Ergebnisse der „Suche Standzeit"-Recherche, je Ladepunkt (evseId).
+  type Researched =
+    | { label: string; verdict: "free" | "limited" | "closed" | "unknown"; source: string | null; note: string | null }
+    | { notFound: true };
+  const [researched, setResearched] = useState<Record<string, Researched>>({});
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  const searchStandzeit = useCallback(
+    async (o: ViewCharger, e: MouseEvent) => {
+      e.stopPropagation();
+      if (!o.city || loadingId) return;
+      setLoadingId(o.evseId);
+      try {
+        const res = await fetch("/api/standzeit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ city: o.city, connector: o.connector }),
+        });
+        const data = await res.json();
+        setResearched((prev) => ({
+          ...prev,
+          [o.evseId]: data?.found
+            ? { label: data.label, verdict: data.verdict ?? "unknown", source: data.source ?? null, note: data.note ?? null }
+            : { notFound: true },
+        }));
+      } catch {
+        setResearched((prev) => ({ ...prev, [o.evseId]: { notFound: true } }));
+      } finally {
+        setLoadingId(null);
+      }
+    },
+    [loadingId],
+  );
+
   const scrollerRef = useRef<HTMLDivElement>(null);
   const programmatic = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -152,12 +188,64 @@ export default function ResultView({
                 <div className="mono" style={{ fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", color: "#7C7C85", marginTop: 10 }}>
                   {live ? `● Live · ${live}` : o.freePoints != null ? "Keine Realtime-Daten" : "Belegung: keine Live-Daten"}
                 </div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 11 }}>
-                  <span className="mono" style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--faint)", flex: "none" }}>Standzeit</span>
-                  <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: STANDZEIT_COLOR[o.standzeitLabel ? (o.standzeitVerdict ?? "unknown") : "unknown"] }}>
-                    {o.standzeitLabel ?? "Nur während des Ladens · Höchstparkdauer laut Schild"}
-                  </span>
-                </div>
+                {(() => {
+                  const rr = researched[o.evseId];
+                  const got = rr && !("notFound" in rr) ? rr : null;
+                  const notFound = !!rr && "notFound" in rr;
+                  const label = got?.label ?? o.standzeitLabel ?? null;
+                  const verdict = got?.verdict ?? o.standzeitVerdict ?? "unknown";
+                  const sourceUrl = got?.source ?? null;
+                  const busy = loadingId === o.evseId;
+                  const originTag = got
+                    ? "recherchiert"
+                    : o.standzeitLabel
+                      ? (o.standzeitSource ?? "kuratiert")
+                      : null;
+                  return (
+                    <div style={{ marginTop: 11 }}>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                        <span className="mono" style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--faint)", flex: "none" }}>Standzeit</span>
+                        <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: STANDZEIT_COLOR[label ? verdict : "unknown"] }}>
+                          {label ?? "Nur während des Ladens · Höchstparkdauer laut Schild"}
+                        </span>
+                      </div>
+                      {(originTag || sourceUrl || got?.note) && (
+                        <div className="mono" style={{ fontSize: 9, letterSpacing: "0.06em", color: "#7C7C85", marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          {originTag && <span style={{ textTransform: "uppercase" }}>{originTag}</span>}
+                          {got?.note && <span>{got.note}</span>}
+                          {sourceUrl && (
+                            <a href={sourceUrl} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} style={{ color: "var(--coral)" }}>Quelle ↗</a>
+                          )}
+                        </div>
+                      )}
+                      {notFound && (
+                        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6, lineHeight: 1.35 }}>
+                          Keine belastbare Regel gefunden — Höchstparkdauer laut Schild vor Ort.
+                        </div>
+                      )}
+                      {!label && o.city && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => searchStandzeit(o, e)}
+                          aria-busy={busy}
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 7, marginTop: 8,
+                            padding: "6px 12px", borderRadius: 999, cursor: busy ? "default" : "pointer",
+                            fontSize: 12, fontWeight: 600, color: "var(--fg)",
+                            border: "1px solid var(--line, rgba(255,255,255,0.14))",
+                            background: "rgba(255,255,255,0.04)", opacity: busy ? 0.6 : 1,
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                            <circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" />
+                          </svg>
+                          {busy ? "Suche läuft …" : notFound ? "Erneut suchen" : "Suche Standzeit"}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
               </button>
             </div>
           );

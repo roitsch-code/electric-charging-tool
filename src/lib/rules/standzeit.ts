@@ -21,7 +21,7 @@ export interface StandzeitRule {
 type Kind = "ac" | "dc";
 
 /** Städtename für den Schlüssel normalisieren (Umlaute, Kleinschreibung). */
-function normCity(city: string): string {
+export function normCity(city: string): string {
   return city
     .toLowerCase()
     .replace(/ä/g, "ae")

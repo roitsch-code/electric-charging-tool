@@ -2,6 +2,7 @@ import { fetchTomTomAvailability, aggregateTomTomStatus } from "@/lib/availabili
 import type { Coordinates } from "@/lib/resolver/types";
 import type { Connector } from "@/lib/vehicle";
 import { cityStandzeit, cityFromAddress } from "@/lib/rules/standzeit";
+import { getSavedRule } from "@/lib/rules/standzeit-db";
 import { haversineMeters } from "./geo";
 import type { Charger, ChargerSource } from "./types";
 
@@ -102,6 +103,19 @@ export class TomTomChargerSource implements ChargerSource {
     // Live-Abruf-Budget über alle Gruppen (nächste zuerst).
     let budget = MAX_LIVE_LOOKUPS;
 
+    // Gespeicherte Recherche-Regeln pro (Stadt+Ladeart) nur einmal abfragen.
+    const savedCache = new Map<string, ReturnType<typeof getSavedRule>>();
+    const savedFor = (city: string | undefined, connector: "ac" | "dc") => {
+      if (!city) return Promise.resolve(null);
+      const key = `${city.toLowerCase()}|${connector}`;
+      let p = savedCache.get(key);
+      if (!p) {
+        p = getSavedRule(city, connector);
+        savedCache.set(key, p);
+      }
+      return p;
+    };
+
     return Promise.all(
       ordered.map(async (g): Promise<Charger> => {
         const first = g.items[0]!.r;
@@ -137,7 +151,12 @@ export class TomTomChargerSource implements ChargerSource {
               : "unknown";
 
         const city = cityFromAddress(address, first.address?.municipality);
-        const sz = cityStandzeit(city, connector);
+        // Kuratiertes Regelwerk zuerst; sonst eine früher recherchierte,
+        // gespeicherte Regel (DB). connectorKind liefert "ac"/"dc".
+        const kind: "ac" | "dc" = connector === "dc" ? "dc" : "ac";
+        const stat = cityStandzeit(city, kind);
+        const sz = stat ?? (await savedFor(city, kind));
+        const standzeitSource = stat ? "kuratiert" : sz ? "recherchiert" : undefined;
         return {
           evseId: `TT:${first.id ?? `${g.lat},${g.lng}`}`,
           name: address ?? operator ?? "Ladepunkt",
@@ -155,6 +174,8 @@ export class TomTomChargerSource implements ChargerSource {
           totalPoints,
           standzeitLabel: sz?.label,
           standzeitVerdict: sz?.verdict,
+          standzeitSource,
+          city,
         };
       }),
     );

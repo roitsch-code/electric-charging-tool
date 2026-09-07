@@ -30,6 +30,10 @@ export interface Charger {
    *  umgeht die OSM-Overpass-Abfrage, wenn gesetzt. */
   standzeitLabel?: string;
   standzeitVerdict?: "free" | "limited" | "closed" | "unknown";
+  /** Herkunft der Standzeit-Regel: "kuratiert" | "recherchiert". Fehlt => keine. */
+  standzeitSource?: string;
+  /** Stadt (aus der Adresse abgeleitet) — für die „Suche Standzeit"-Recherche. */
+  city?: string;
 }
 
 /** Ein bewerteter Ladepunkt mit allen Zwischenwerten (nachvollziehbar). */
