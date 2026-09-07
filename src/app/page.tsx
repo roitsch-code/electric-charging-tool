@@ -1,3 +1,5 @@
+import Favorites from "./Favorites";
+
 const IconSearch = (
   <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
     <circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" />
@@ -8,32 +10,6 @@ const IconArrow = (
     <path d="M5 12h14M13 6l6 6-6 6" />
   </svg>
 );
-const IconChevron = (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--faint)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m9 6 6 6-6 6" />
-  </svg>
-);
-const IconHotel = (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
-    <path d="M3 21h18M5 21V5h9v16M14 9h5v12M8 9h2M8 13h2" />
-  </svg>
-);
-const IconHome = (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
-    <path d="m3 11 9-7 9 7M5 10v10h14V10" />
-  </svg>
-);
-const IconSpa = (
-  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
-    <path d="M12 3v18M5 8l7-5 7 5M5 8v13M19 8v13M3 21h18" />
-  </svg>
-);
-
-const favorites = [
-  { icon: IconHome, name: "Zuhause", sub: "ACKERSTRASSE · DÜSSELDORF", href: `/plan?q=${encodeURIComponent("Ackerstraße 199, 40233 Düsseldorf")}&dwell=lang` },
-  { icon: IconHotel, name: "GINN Hotel", sub: "HAMBURG · ÜBER NACHT", href: `/plan?q=${encodeURIComponent("GINN Hotel Hamburg City")}&dwell=lang` },
-  { icon: IconSpa, name: "Kurhaus", sub: "BADEN-BADEN", href: `/plan?q=${encodeURIComponent("Kurhaus Baden-Baden")}&dwell=paar` },
-];
 
 export default function Home() {
   return (
@@ -62,18 +38,7 @@ export default function Home() {
         </div>
 
         <div className="kicker" style={{ margin: "24px 2px 4px" }}>Ziele</div>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {favorites.map((f) => (
-            <a key={f.name} className="row" href={f.href}>
-              <span className="glyph">{f.icon}</span>
-              <span style={{ flex: 1 }}>
-                <span style={{ display: "block", fontSize: 16 }}>{f.name}</span>
-                <span className="mono" style={{ display: "block", fontSize: 11, color: "var(--faint)", marginTop: 2 }}>{f.sub}</span>
-              </span>
-              {IconChevron}
-            </a>
-          ))}
-        </div>
+        <Favorites />
 
         <button type="submit" className="btn" style={{ marginTop: 22 }}>
           Laden finden {IconArrow}

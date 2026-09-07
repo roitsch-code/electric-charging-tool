@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ResultView, { type ViewCharger } from "./ResultView";
+import RecordLastSpot from "./RecordLastSpot";
 import { planDestination } from "@/lib/chargers";
 import { getChargerSource } from "@/lib/chargers/source-factory";
 import { getAvailabilityProvider } from "@/lib/availability";
@@ -37,7 +38,14 @@ export default async function PlanPage({ searchParams }: { searchParams: Promise
       {!dest.ok || !dest.coords ? (
         <ManualFallback hint={dest.placeNameHint} reason={dest.reason} />
       ) : (
-        <Result coords={dest.coords} input={input} />
+        <>
+          <Result coords={dest.coords} input={input} />
+          <RecordLastSpot
+            name={dest.coords.name ?? one(sp.q) ?? one(sp.to) ?? "Letztes Ziel"}
+            query={one(sp.q) ?? one(sp.to) ?? dest.coords.name ?? ""}
+            dwell={one(sp.dwell) ?? "lang"}
+          />
+        </>
       )}
     </main>
   );
