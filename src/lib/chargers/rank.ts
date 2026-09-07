@@ -13,7 +13,7 @@ import type { Charger, RankedCharger } from "./types";
  * Score-Gewichte (Konzept §8, Schritt 5): w1·Naehe + w2·Klassen-Match +
  * w3·Verfuegbarkeit. Bewusst als Konstanten, im Alltag nachzuschaerfen.
  */
-export const WEIGHTS = { distance: 0.4, class: 0.4, availability: 0.2 };
+export const WEIGHTS = { distance: 0.55, class: 0.3, availability: 0.15 };
 
 /**
  * Verfeinerung gegenueber Konzept §8, Schritt 3 ("Ladepunkt AM Ziel immer
@@ -47,8 +47,10 @@ export function classScore(charger: Charger, demand: DemandClass): number {
 
   switch (demand) {
     case "ac_ok":
-      // Ueber Nacht: AC 11 kW reicht und ist guenstiger -> bevorzugen.
-      return charger.connector === "ac" ? 1.0 : 0.5;
+      // Ueber Nacht: AC 11 kW reicht und ist guenstiger -> leicht bevorzugen.
+      // DC aber nicht hart abstrafen, sonst verschwindet ein naher Schnelllader
+      // hinter weit entfernten AC-Saeulen.
+      return charger.connector === "ac" ? 1.0 : 0.65;
     case "ac_or_dc":
       return charger.connector === "dc"
         ? 0.85 * (0.7 + 0.3 * powerFrac)
@@ -83,6 +85,22 @@ export function usablePowerOf(charger: Charger): number {
 }
 
 /**
+ * Eignungs-Faktor als MULTIPLIKATOR auf den Gesamt-Score.
+ *
+ * Hintergrund: Die Gewichte sind bewusst naehe-dominant (WEIGHTS.distance
+ * 0,55), damit im Alltag ein naher Schnelllader nicht hinter weit entfernten
+ * AC-Saeulen verschwindet. Additive Klassen-Strafe reicht dann aber nicht:
+ * ein AC-Punkt DIREKT am Ziel (Distanz-Score ~1) wuerde bei dc_required allein
+ * ueber die Naehe einen brauchbaren, aber 200 m entfernten DC-Lader schlagen —
+ * obwohl man dort gar nicht schnellladen KANN. Darum ein harter, aber nicht
+ * ausschliessender Faktor: AC bei dc_required rutscht unter JEDEN nutzbaren
+ * DC-Punkt, bleibt aber sichtbar, falls es nichts anderes gibt (AC-only).
+ */
+export function suitabilityFactor(charger: Charger, demand: DemandClass): number {
+  return demand === "dc_required" && charger.connector === "ac" ? 0.2 : 1.0;
+}
+
+/**
  * Bewertet und sortiert Kandidaten (Konzept §8). Ladepunkte AM Ziel
  * (atDestination) kommen immer zuerst, unabhaengig von der Leistung
  * (Schritt 3). Radius-Erweiterung passiert vorgelagert in plan.ts.
@@ -102,10 +120,12 @@ export function rankChargers(
     const dScore = distanceScore(walkingM);
     const cScore = classScore(charger, demand);
     const aScore = availabilityScore(charger);
+    const suitability = suitabilityFactor(charger, demand);
     const score =
-      WEIGHTS.distance * dScore +
-      WEIGHTS.class * cScore +
-      WEIGHTS.availability * aScore;
+      (WEIGHTS.distance * dScore +
+        WEIGHTS.class * cScore +
+        WEIGHTS.availability * aScore) *
+      suitability;
 
     return {
       charger,
@@ -116,6 +136,7 @@ export function rankChargers(
       distanceScore: round3(dScore),
       classScore: round3(cScore),
       availabilityScore: round3(aScore),
+      suitability,
       score: round3(score),
     } satisfies RankedCharger;
   });
@@ -145,9 +166,10 @@ export function rescoreAvailability(r: RankedCharger): void {
   const a = availabilityScore(r.charger);
   r.availabilityScore = round3(a);
   r.score = round3(
-    WEIGHTS.distance * r.distanceScore +
+    (WEIGHTS.distance * r.distanceScore +
       WEIGHTS.class * r.classScore +
-      WEIGHTS.availability * a,
+      WEIGHTS.availability * a) *
+      r.suitability,
   );
 }
 

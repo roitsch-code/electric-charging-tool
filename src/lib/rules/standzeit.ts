@@ -38,27 +38,40 @@ function normCity(city: string): string {
  * Begrenzung auch relevant (amber). Quellen jeweils im Kommentar.
  */
 const CITY_RULES: Record<string, (c: Kind) => StandzeitRule> = {
-  // Düsseldorf (SWD/Stadt): Zeichen 314, tags 1 Std (DC) / 4 Std (AC),
-  // nachts frei (SWD-Blockiergebühr entfällt 21–08). Quelle: swd-ag.de, electrive.
+  // Düsseldorf (SWD/Stadt): Zeichen 314; tagsüber max. 1 Std (DC) / 4 Std (AC),
+  // 21–9 Uhr frei (SWD-Blockiergebühr entfällt). Quelle: swd-ag.de, electrive.
   duesseldorf: (c) =>
     c === "dc"
-      ? { label: "Nachts frei · tagsüber max. 1 Std", verdict: "free" }
-      : { label: "Nachts frei · tagsüber max. 4 Std", verdict: "free" },
+      ? { label: "Max. 1 Std · 21–9 Uhr frei", verdict: "free" }
+      : { label: "Max. 4 Std · 21–9 Uhr frei", verdict: "free" },
 
   // Hamburg: nur während des Ladens; werktags 9–20 Uhr max. 3 Std (AC) /
   // 1 Std (DC), außerhalb ohne Zeitlimit. Quelle: hamburg.de, polizei.hamburg.
   hamburg: (c) =>
     c === "dc"
-      ? { label: "Tags 9–20 Uhr max. 1 Std · nachts ohne Limit", verdict: "free" }
-      : { label: "Tags 9–20 Uhr max. 3 Std · nachts ohne Limit", verdict: "free" },
+      ? { label: "Max. 1 Std (9–20 Uhr) · 20–9 Uhr frei", verdict: "free" }
+      : { label: "Max. 3 Std (9–20 Uhr) · 20–9 Uhr frei", verdict: "free" },
 
-  // Köln (Stadt/SWK): max. 4 Std; Blockiergebühr nur 9–21 Uhr → nachts frei.
+  // Köln (Stadt/SWK): max. 4 Std; Blockiergebühr nur 9–21 Uhr → 21–9 Uhr frei.
   // Quelle: stadt-koeln.de.
   koeln: (c) =>
     c === "dc"
-      ? { label: "Nachts frei · tagsüber 9–21 Uhr max. 1 Std", verdict: "free" }
-      : { label: "Nachts frei · tagsüber 9–21 Uhr max. 4 Std", verdict: "free" },
+      ? { label: "Max. 1 Std (9–21 Uhr) · 21–9 Uhr frei", verdict: "free" }
+      : { label: "Max. 4 Std (9–21 Uhr) · 21–9 Uhr frei", verdict: "free" },
+
+  // Aachen (Stadt/STAWAG): aktives Laden 7–21 Uhr max. 2 Std (AC) / 1 Std (DC),
+  // Parkscheibe + E-Kennzeichen; außerhalb frei. Quelle: aachen.de, stawag.de.
+  aachen: (c) =>
+    c === "dc"
+      ? { label: "Max. 1 Std (7–21 Uhr) · 21–7 Uhr frei", verdict: "free" }
+      : { label: "Max. 2 Std (7–21 Uhr) · 21–7 Uhr frei", verdict: "free" },
 };
+
+/** Allgemeiner, ehrlich als solcher gekennzeichneter Hinweis, wenn für die
+ *  Stadt (noch) keine recherchierte Regel vorliegt. Kein erfundener Wert. */
+export function generalStandzeitNote(): StandzeitRule {
+  return { label: "Nur während des Ladens · Höchstparkdauer laut Schild", verdict: "unknown" };
+}
 
 /** Stadt-Regel nachschlagen (null, wenn Stadt nicht im Regelwerk). */
 export function cityStandzeit(city: string | undefined, connector: Kind): StandzeitRule | null {

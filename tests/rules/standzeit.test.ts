@@ -2,19 +2,34 @@ import { describe, it, expect } from "vitest";
 import { cityStandzeit, cityFromAddress, hasCityRule } from "@/lib/rules/standzeit";
 
 describe("cityStandzeit", () => {
-  it("Düsseldorf: DC 1 Std, AC 4 Std, nachts frei", () => {
-    expect(cityStandzeit("Düsseldorf", "dc")).toEqual({ label: "Nachts frei · tagsüber max. 1 Std", verdict: "free" });
-    expect(cityStandzeit("Düsseldorf", "ac")?.label).toContain("4 Std");
+  it("Düsseldorf: DC 1 Std, AC 4 Std, nachts frei — mit konkreter Uhrzeit", () => {
+    const dc = cityStandzeit("Düsseldorf", "dc")!;
+    expect(dc.verdict).toBe("free");
+    expect(dc.label).toContain("1 Std");
+    expect(dc.label).toContain("frei");
+    expect(dc.label).toMatch(/21.?9/); // Uhrzeitfenster im Label
+    const ac = cityStandzeit("Düsseldorf", "ac")!;
+    expect(ac.label).toContain("4 Std");
+    expect(ac.label).toMatch(/21.?9/);
   });
 
-  it("Hamburg: DC 1 Std, AC 3 Std, nachts ohne Limit", () => {
+  it("Hamburg: DC 1 Std, AC 3 Std, mit Uhrzeitfenster", () => {
     expect(cityStandzeit("Hamburg", "ac")?.label).toContain("3 Std");
     expect(cityStandzeit("Hamburg", "dc")?.label).toContain("1 Std");
+    expect(cityStandzeit("Hamburg", "ac")?.label).toContain("frei");
   });
 
   it("Köln: 4 Std tags, nachts frei (auch koeln/KÖLN)", () => {
     expect(cityStandzeit("Köln", "ac")?.label).toContain("4 Std");
+    expect(cityStandzeit("Köln", "ac")?.label).toContain("frei");
     expect(cityStandzeit("koeln", "ac")?.verdict).toBe("free");
+  });
+
+  it("Aachen: DC 1 Std, AC 2 Std, 7–21 Uhr, nachts frei", () => {
+    expect(cityStandzeit("Aachen", "dc")?.label).toContain("1 Std");
+    expect(cityStandzeit("Aachen", "ac")?.label).toContain("2 Std");
+    expect(cityStandzeit("Aachen", "ac")?.verdict).toBe("free");
+    expect(hasCityRule("Aachen")).toBe(true);
   });
 
   it("unbekannte Stadt -> null", () => {

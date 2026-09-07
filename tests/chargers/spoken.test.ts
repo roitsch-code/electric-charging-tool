@@ -53,6 +53,7 @@ describe("spokenForPlan (Konzept §6.6)", () => {
           distanceScore: 0.4,
           classScore: 0.8,
           availabilityScore: 0.5,
+          suitability: 1.0,
           score: 0.6,
         },
       ],

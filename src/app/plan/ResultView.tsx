@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import StartTripButton from "./StartTripButton";
-import NightBadge from "./NightBadge";
 import ResultMap from "./ResultMap";
 import { walkFromChargerUrl } from "@/lib/chargers";
 
@@ -153,14 +152,12 @@ export default function ResultView({
                 <div className="mono" style={{ fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", color: "#7C7C85", marginTop: 10 }}>
                   {live ? `● Live · ${live}` : o.freePoints != null ? "Keine Realtime-Daten" : "Belegung: keine Live-Daten"}
                 </div>
-                {o.standzeitLabel ? (
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 11 }}>
-                    <span className="mono" style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--faint)", flex: "none" }}>Standzeit</span>
-                    <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: STANDZEIT_COLOR[o.standzeitVerdict ?? "unknown"] }}>{o.standzeitLabel}</span>
-                  </div>
-                ) : (
-                  <NightBadge lat={o.lat} lng={o.lng} />
-                )}
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 11 }}>
+                  <span className="mono" style={{ fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--faint)", flex: "none" }}>Standzeit</span>
+                  <span style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.3, color: STANDZEIT_COLOR[o.standzeitLabel ? (o.standzeitVerdict ?? "unknown") : "unknown"] }}>
+                    {o.standzeitLabel ?? "Nur während des Ladens · Höchstparkdauer laut Schild"}
+                  </span>
+                </div>
               </button>
             </div>
           );

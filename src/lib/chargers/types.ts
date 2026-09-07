@@ -43,6 +43,9 @@ export interface RankedCharger {
   distanceScore: number;
   classScore: number;
   availabilityScore: number;
+  /** Eignungs-Multiplikator (1,0 normal; <1 bei hartem Klassen-Mismatch,
+   *  z. B. AC-Punkt bei dc_required — siehe rank.ts/suitabilityFactor). */
+  suitability: number;
   score: number;
 }
 
