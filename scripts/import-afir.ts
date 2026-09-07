@@ -66,8 +66,17 @@ async function main() {
     for (const { s, d } of near.slice(0, 15)) {
       console.log(`  ${d} m  ${s.connector.toUpperCase()} ${s.powerKw}kW  ${s.totalPoints}× | ${s.operator ?? s.name ?? "?"} | ${s.address ?? ""}`);
     }
-    console.log("\nGlobale Beispiele:");
-    console.log(JSON.stringify(stations.slice(0, 2), null, 2));
+    // Coverage-Check: nächste Station überhaupt + Betreiber im Feed
+    const withD = stations.map((s) => ({ s, d: distM(HOME, s) })).sort((a, b) => a.d - b.d);
+    if (withD[0]) {
+      const n = withD[0];
+      console.log(`\nNächste Station zum Zuhause: ${(n.d / 1000).toFixed(1)} km — ${n.s.name} (${n.s.operator})`);
+    }
+    const byOp = new Map<string, number>();
+    for (const s of stations) byOp.set(s.operator ?? "?", (byOp.get(s.operator ?? "?") ?? 0) + 1);
+    const top = [...byOp.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20);
+    console.log(`\nBetreiber im Feed (${byOp.size} gesamt), Top 20:`);
+    console.log("  " + top.map(([o, n]) => `${o}:${n}`).join("  "));
     return;
   }
 
