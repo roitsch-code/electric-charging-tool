@@ -41,7 +41,7 @@ export default function OptionsMap({ dest, options }: { dest: Pt; options: Opt[]
   const pct = (p: { x: number; y: number }) => ({ left: `${(p.x / W) * 100}%`, top: `${(p.y / H) * 100}%` });
 
   return (
-    <div style={{ position: "relative", height: "100%", minHeight: 150, borderRadius: 18, overflow: "hidden", border: "1px solid var(--line)", background: "#0C0C11" }}>
+    <div style={{ position: "relative", height: "100%", minHeight: 110, borderRadius: 18, overflow: "hidden", border: "1px solid var(--line)", background: "#0C0C11" }}>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0, display: "block" }}>
         <rect width={W} height={H} fill="#0C0C11" />
         <g stroke="rgba(255,255,255,0.045)" strokeWidth="8" fill="none" strokeLinecap="round">

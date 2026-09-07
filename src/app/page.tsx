@@ -59,7 +59,8 @@ export default function Home() {
         </div>
 
         <div className="kicker" style={{ margin: "22px 2px 4px", flex: "none" }}>Ziele</div>
-        <div style={{ display: "flex", flexDirection: "column" }}>
+        {/* nur dieser Bereich flext/scrollt intern — der Button bleibt immer sichtbar */}
+        <div style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
           {favorites.map((f) => (
             <a key={f.name} className="row" href={f.href}>
               <span className="glyph">{f.icon}</span>
@@ -72,12 +73,10 @@ export default function Home() {
           ))}
         </div>
 
-        <div style={{ flex: 1, minHeight: 16 }} />
-
-        <button type="submit" className="btn" style={{ flex: "none" }}>
+        <button type="submit" className="btn" style={{ flex: "none", marginTop: 14 }}>
           Laden finden {IconArrow}
         </button>
-        <p className="mono" style={{ color: "var(--faint)", fontSize: 10.5, lineHeight: 1.5, margin: "12px 0 0", textAlign: "center", flex: "none" }}>
+        <p className="mono" style={{ color: "var(--faint)", fontSize: 10.5, lineHeight: 1.5, margin: "10px 0 0", textAlign: "center", flex: "none" }}>
           Ladepunkte in Gehweite deines Ziels — passend zu Auto und Aufenthalt. Belegung live.
         </p>
       </form>

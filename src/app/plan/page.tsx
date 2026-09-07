@@ -85,7 +85,7 @@ async function Result({ coords, input }: { coords: { lat: number; lng: number; n
         </div>
       </div>
 
-      <div style={{ flex: "1 1 auto", minHeight: 140 }}>
+      <div style={{ flex: "1 1 0", minHeight: 0 }}>
         <OptionsMap dest={coords} options={options} />
       </div>
 
