@@ -107,6 +107,8 @@ model Chargepoint {
   connectorType String?  @map("connector_type")
   address       String?
   source        String
+  /// Anzahl Ladepunkte an dieser Station (AFIR-Aggregat); null = unbekannt.
+  totalPoints   Int?     @map("total_points")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   status ChargepointStatus?

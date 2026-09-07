@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseAfirStatic, buildAfirSnapshots } from "@/lib/realtime/datex-afir-static";
+import { parseAfirStatic, buildAfirSnapshots, aggregateAfirStations } from "@/lib/realtime/datex-afir-static";
 import { parseAfirDynamic } from "@/lib/realtime/datex-afir";
 
 // Nachbau der echten Static-Struktur (2026-09, verifiziert an Mobilithek-Daten).
@@ -142,5 +142,24 @@ describe("buildAfirSnapshots (Join Static + Dynamic)", () => {
       },
     } as unknown as Record<string, unknown>);
     expect(buildAfirSnapshots([], dynamic)).toEqual([]);
+  });
+});
+
+describe("aggregateAfirStations", () => {
+  it("aggregiert Punkte je Standort zu Stationen (Anzahl, max. Leistung, DC gewinnt)", () => {
+    const stations = aggregateAfirStations([
+      { pointId: "a1", evseId: "E1", lat: 51.2308, lng: 6.8101, connector: "dc", powerKw: 150, operator: "SWD", name: "Ackerstr." },
+      { pointId: "a2", evseId: "E2", lat: 51.2308, lng: 6.8101, connector: "ac", powerKw: 22, operator: "SWD", name: "Ackerstr." },
+      { pointId: "b1", evseId: "E3", lat: 51.2312, lng: 6.8114, connector: "ac", powerKw: 22, operator: "SWD", name: "Degerstr." },
+    ]);
+    expect(stations).toHaveLength(2);
+    const acker = stations.find((s) => s.evseId === "AFIR:51.230800,6.810100")!;
+    expect(acker.totalPoints).toBe(2);
+    expect(acker.connector).toBe("dc"); // gemischt -> DC gewinnt
+    expect(acker.powerKw).toBe(150); // max
+    expect(acker.source).toBe("afir");
+    const deger = stations.find((s) => s.evseId === "AFIR:51.231200,6.811400")!;
+    expect(deger.totalPoints).toBe(1);
+    expect(deger.connector).toBe("ac");
   });
 });

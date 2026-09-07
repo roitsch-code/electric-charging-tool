@@ -1,5 +1,5 @@
 import type { AvailabilitySnapshot } from "@/lib/availability/types";
-import type { ChargerStatus } from "@/lib/chargers/types";
+import type { Charger, ChargerStatus } from "@/lib/chargers/types";
 import type { AfirDynamicResult } from "./datex-afir";
 
 /**
@@ -148,6 +148,45 @@ function siteName(site: Json): string | null {
   const city = firstValue(addr.city);
   const line = firstValue(asObj(asArray(addr.addressLine)[0]).text);
   return [line, city].filter(Boolean).join(", ") || city || null;
+}
+
+/**
+ * Aggregiert die AFIR-Static-Ladepunkte je Standort (gleiche Koordinaten) zu
+ * einer Station mit Anzahl (`totalPoints`), max. Leistung und Stromart
+ * (DC gewinnt, falls gemischt) — die Form, die die App als eine Option zeigt.
+ * evseId = stabiler Standort-Schlüssel, damit der Upsert nicht dupliziert.
+ */
+export function aggregateAfirStations(points: AfirStaticPoint[]): Charger[] {
+  const groups = new Map<
+    string,
+    { lat: number; lng: number; operator: string | null; name: string | null; total: number; maxPower: number; anyDc: boolean }
+  >();
+
+  for (const p of points) {
+    const key = `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
+    const g =
+      groups.get(key) ??
+      { lat: p.lat, lng: p.lng, operator: p.operator, name: p.name, total: 0, maxPower: 0, anyDc: false };
+    g.total += 1;
+    if (p.powerKw > g.maxPower) g.maxPower = p.powerKw;
+    if (p.connector === "dc") g.anyDc = true;
+    if (!g.operator && p.operator) g.operator = p.operator;
+    if (!g.name && p.name) g.name = p.name;
+    groups.set(key, g);
+  }
+
+  return [...groups.entries()].map(([key, g]) => ({
+    evseId: `AFIR:${key}`,
+    name: g.operator ?? g.name ?? "Ladepunkt",
+    lat: g.lat,
+    lng: g.lng,
+    operator: g.operator ?? undefined,
+    powerKw: g.maxPower,
+    connector: g.anyDc ? "dc" : "ac",
+    address: g.name ?? undefined,
+    source: "afir",
+    totalPoints: g.total,
+  }));
 }
 
 /**

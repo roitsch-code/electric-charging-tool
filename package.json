@@ -17,6 +17,7 @@
     "db:push": "prisma db push",
     "db:postgis": "psql \"$DATABASE_URL\" -f prisma/sql/postgis.sql",
     "db:trips": "psql \"$DATABASE_URL\" -f prisma/sql/trips.sql",
+    "import:afir": "tsx scripts/import-afir.ts",
     "import:bnetza": "tsx scripts/import-bnetza.ts",
     "import:ocm": "tsx scripts/import-ocm.ts",
     "import:ocpdb": "tsx scripts/import-ocpdb.ts",

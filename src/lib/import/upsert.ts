@@ -28,6 +28,7 @@ export async function upsertChargers(
             connectorType: c.connectorType ?? null,
             address: c.address ?? null,
             source: c.source ?? "unknown",
+            totalPoints: c.totalPoints ?? null,
           },
           update: {
             lat: c.lat,
@@ -38,6 +39,7 @@ export async function upsertChargers(
             connectorType: c.connectorType ?? null,
             address: c.address ?? null,
             source: c.source ?? "unknown",
+            totalPoints: c.totalPoints ?? null,
           },
         }),
       ),

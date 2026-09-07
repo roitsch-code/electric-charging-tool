@@ -22,6 +22,7 @@ interface Row {
   connector_type: string | null;
   address: string | null;
   source: string;
+  total_points: number | null;
   status: string | null;
   status_updated_at: Date | null;
   dist_m: number;
@@ -41,7 +42,7 @@ export class PostgisChargerSource implements ChargerSource {
 
     const rows = await prisma.$queryRaw<Row[]>`
       SELECT c.evse_id, c.lat, c.lng, c.operator, c.power_kw, c.connector,
-             c.connector_type, c.address, c.source,
+             c.connector_type, c.address, c.source, c.total_points,
              s.status AS status, s.last_updated AS status_updated_at,
              ST_Distance(
                ST_SetSRID(ST_MakePoint(c.lng, c.lat), 4326)::geography,
@@ -68,6 +69,7 @@ export class PostgisChargerSource implements ChargerSource {
       connector: r.connector === "dc" ? "dc" : "ac",
       connectorType: r.connector_type ?? undefined,
       address: r.address ?? undefined,
+      totalPoints: r.total_points ?? undefined,
       atDestination: r.dist_m <= AT_DESTINATION_M,
       status: toStatus(r.status),
       statusUpdatedAt: r.status_updated_at
