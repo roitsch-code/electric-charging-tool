@@ -77,6 +77,18 @@ async function main() {
     const top = [...byOp.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20);
     console.log(`\nBetreiber im Feed (${byOp.size} gesamt), Top 20:`);
     console.log("  " + top.map(([o, n]) => `${o}:${n}`).join("  "));
+
+    // Gegentest: ALLE Stationen mit "Düsseldorf" in der Adresse (egal welche
+    // Koordinate) — zeigt, ob SWD/Ackerstraße im Feed steht, nur evtl. falsch verortet.
+    const dus = stations.filter((s) => (s.address ?? "").toLowerCase().includes("düsseldorf"));
+    console.log(`\nStationen mit "Düsseldorf" in der Adresse: ${dus.length}`);
+    for (const s of dus.slice(0, 40)) {
+      console.log(`  ${distM(HOME, s)} m | ${s.connector.toUpperCase()} ${s.powerKw}kW ${s.totalPoints}× | ${s.operator} | ${s.address}`);
+    }
+    // und alles mit den drei Zielstraßen im Namen
+    const streets = stations.filter((s) => /ackerstra|degerstra|hermannstra/i.test(s.address ?? ""));
+    console.log(`\nStationen mit Acker-/Deger-/Hermannstraße in der Adresse: ${streets.length}`);
+    for (const s of streets) console.log(`  ${s.operator} | ${s.address} | ${s.lat},${s.lng}`);
     return;
   }
 
