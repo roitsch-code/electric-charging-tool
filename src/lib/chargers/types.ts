@@ -23,6 +23,9 @@ export interface Charger {
   status?: ChargerStatus;
   /** ISO-Zeitstempel der letzten Statusaktualisierung; fehlt => unbekannt. */
   statusUpdatedAt?: string;
+  /** Freie / gesamte Ladepunkte an dieser Station, falls bekannt (AFIR-Aggregat). */
+  freePoints?: number;
+  totalPoints?: number;
 }
 
 /** Ein bewerteter Ladepunkt mit allen Zwischenwerten (nachvollziehbar). */

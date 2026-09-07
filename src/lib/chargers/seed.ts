@@ -27,6 +27,8 @@ export const SEED_CHARGERS: Charger[] = [
     atDestination: true,
     status: "available",
     statusUpdatedAt: minutesAgo(2),
+    freePoints: 2,
+    totalPoints: 2,
   },
   {
     evseId: "DE*SEED*E000002",
@@ -39,6 +41,8 @@ export const SEED_CHARGERS: Charger[] = [
     address: "Gaswerkstrasse, Hamburg",
     status: "available",
     statusUpdatedAt: minutesAgo(1),
+    freePoints: 3,
+    totalPoints: 4,
   },
   {
     evseId: "DE*SEED*E000003",
@@ -51,6 +55,8 @@ export const SEED_CHARGERS: Charger[] = [
     address: "Ottenser Hauptstrasse, Hamburg",
     status: "occupied",
     statusUpdatedAt: minutesAgo(3),
+    freePoints: 0,
+    totalPoints: 6,
   },
   {
     evseId: "DE*SEED*E000004",
@@ -74,6 +80,8 @@ export const SEED_CHARGERS: Charger[] = [
     address: "Bahrenfelder Chaussee, Hamburg",
     status: "available",
     statusUpdatedAt: minutesAgo(6),
+    freePoints: 1,
+    totalPoints: 2,
   },
   {
     evseId: "DE*SEED*E000006",
@@ -86,6 +94,8 @@ export const SEED_CHARGERS: Charger[] = [
     address: "Stresemannstrasse, Hamburg",
     status: "outoforder",
     statusUpdatedAt: minutesAgo(12),
+    freePoints: 0,
+    totalPoints: 2,
   },
 
   // --- Cluster 2: laendlich (~53.2000, 7.5000), nur ein Punkt bei ~1,5 km ---
@@ -100,6 +110,8 @@ export const SEED_CHARGERS: Charger[] = [
     address: "Dorfstrasse, Emsland",
     status: "available",
     statusUpdatedAt: minutesAgo(20),
+    freePoints: 1,
+    totalPoints: 1,
   },
 ];
 

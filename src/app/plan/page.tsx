@@ -57,7 +57,8 @@ async function Result({ coords, input }: { coords: { lat: number; lng: number; n
     );
   }
 
-  const options: ViewCharger[] = plan.top.map((r) => ({
+  // Karte + Swipe zeigen Ziel und die Top-3-Optionen (Konzept: nicht überladen).
+  const options: ViewCharger[] = plan.top.slice(0, 3).map((r) => ({
     evseId: r.charger.evseId,
     name: r.charger.name,
     lat: r.charger.lat,
@@ -68,6 +69,8 @@ async function Result({ coords, input }: { coords: { lat: number; lng: number; n
     walkingM: r.walkingM,
     atDestination: r.charger.atDestination ?? false,
     statusUpdatedAt: r.charger.statusUpdatedAt,
+    totalPoints: r.charger.totalPoints ?? 1,
+    freePoints: r.charger.freePoints ?? (r.charger.status === "available" ? 1 : 0),
   }));
 
   return (
