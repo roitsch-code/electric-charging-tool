@@ -61,6 +61,28 @@ async function main() {
 
   console.log(`=== STRUKTUR-GERÜST (${format}) ===`);
   console.log(JSON.stringify(skeleton(root), null, 1));
+
+  // Gezielter Voll-Dump des ersten Ladepunkts + der ersten Site-Koordinaten,
+  // damit die inneren Felder (Leistung, Steckertyp, idG, evseId) sichtbar sind.
+  const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : v == null ? [] : [v]);
+  const obj = (v: unknown): Record<string, unknown> => (v && typeof v === "object" ? (v as Record<string, unknown>) : {});
+  try {
+    const payload = obj(obj(obj(root).messageContainer).payload);
+    const table = arr(payload.energyInfrastructureTable)[0];
+    const site = arr(obj(table).energyInfrastructureSite)[0];
+    const station = arr(obj(site).energyInfrastructureStation)[0];
+    const refill = arr(obj(station).refillPoint)[0];
+    console.log("\n=== ERSTE SITE: coordinatesForDisplay + operator ===");
+    console.log(JSON.stringify({
+      coordinatesForDisplay: obj(obj(site).locationReference).coordinatesForDisplay,
+      operator: obj(site).operator,
+      externalIdentifier: obj(site).externalIdentifier,
+    }, null, 1));
+    console.log("\n=== ERSTER REFILLPOINT (voll) ===");
+    console.log(JSON.stringify(refill, null, 1));
+  } catch (e) {
+    console.log("Konnte refillPoint nicht navigieren:", e);
+  }
 }
 
 main().catch((e) => {
