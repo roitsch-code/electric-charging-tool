@@ -32,7 +32,7 @@ body {
 a { color: #ff8f6b; text-decoration: none; }
 a:hover { color: #ffb093; }
 
-.wrap { max-width: 440px; margin: 0 auto; padding: 56px 22px calc(40px + env(safe-area-inset-bottom)); position: relative; }
+.wrap { max-width: 440px; margin: 0 auto; padding: calc(20px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom)); position: relative; }
 
 /* dreamy bloom */
 .bloom {
