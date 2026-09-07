@@ -1,11 +1,13 @@
+"use client";
+
 /**
- * Schematische Karte aller Optionen: Ziel + alle Top-Ladepunkte als Pins,
- * eingefärbt nach Belegung (frei/belegt/unbekannt), der beste hervorgehoben.
- * Positionen aus echten Koordinaten (bounding-box-Projektion). Minimalistisch;
- * echte Kartenkacheln (MapKit/Mapbox) folgen später.
+ * Schematische Karte aller Optionen: Ziel + alle Ladepunkte als Pins,
+ * eingefärbt nach Belegung. Der ausgewählte Pin ist coral hervorgehoben und
+ * per Tippen wählbar (onSelect). Positionen aus echten Koordinaten
+ * (Bounding-Box-Projektion). Echte Kartenkacheln folgen später.
  */
 type Pt = { lat: number; lng: number };
-type Opt = Pt & { status?: string; best?: boolean; walkingM?: number };
+type Opt = Pt & { status?: string; walkingM?: number };
 
 const STATUS_COLOR: Record<string, string> = {
   available: "#5FD892",
@@ -14,7 +16,17 @@ const STATUS_COLOR: Record<string, string> = {
   unknown: "#8A8F98",
 };
 
-export default function OptionsMap({ dest, options }: { dest: Pt; options: Opt[] }) {
+export default function OptionsMap({
+  dest,
+  options,
+  selected,
+  onSelect,
+}: {
+  dest: Pt;
+  options: Opt[];
+  selected: number;
+  onSelect: (i: number) => void;
+}) {
   const W = 346;
   const H = 260;
   const pad = 0.18;
@@ -37,7 +49,7 @@ export default function OptionsMap({ dest, options }: { dest: Pt; options: Opt[]
 
   const destP = px(0, 0);
   const opts = world.map((w) => ({ ...w, p: px(w.x, w.y) }));
-  const bestP = opts.find((w) => w.o.best)?.p;
+  const selP = opts[selected]?.p;
   const pct = (p: { x: number; y: number }) => ({ left: `${(p.x / W) * 100}%`, top: `${(p.y / H) * 100}%` });
 
   return (
@@ -51,35 +63,42 @@ export default function OptionsMap({ dest, options }: { dest: Pt; options: Opt[]
         <g stroke="rgba(255,255,255,0.03)" strokeWidth="3.5" fill="none">
           <path d={`M${W * 0.15} 0 V${H}`} /><path d={`M0 ${H * 0.48} H${W}`} /><path d={`M${W * 0.5} 0 V${H}`} />
         </g>
-        {bestP && (
-          <path d={`M${bestP.x} ${bestP.y} L${destP.x} ${destP.y}`} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeDasharray="0.5 6" strokeLinecap="round" />
+        {selP && (
+          <path d={`M${selP.x} ${selP.y} L${destP.x} ${destP.y}`} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeDasharray="0.5 6" strokeLinecap="round" />
         )}
       </svg>
 
-      {/* glow at best */}
-      {bestP && (
-        <div style={{ position: "absolute", ...pct(bestP), transform: "translate(-50%,-50%)", width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,130,95,0.34), rgba(255,130,95,0) 68%)", filter: "blur(6px)", pointerEvents: "none" }} />
+      {/* glow am ausgewählten Punkt */}
+      {selP && (
+        <div style={{ position: "absolute", ...pct(selP), transform: "translate(-50%,-50%)", width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,130,95,0.34), rgba(255,130,95,0) 68%)", filter: "blur(6px)", pointerEvents: "none" }} />
       )}
 
-      {/* option pins */}
+      {/* Pins — tippbar */}
       {opts.map((w, i) => {
         const color = STATUS_COLOR[w.o.status ?? "unknown"] ?? STATUS_COLOR.unknown!;
-        const best = w.o.best;
-        const size = best ? 26 : 20;
+        const active = i === selected;
+        const size = active ? 28 : 22;
         return (
-          <div key={i} style={{ position: "absolute", ...pct(w.p), transform: "translate(-50%,-100%)", zIndex: best ? 3 : 2 }}>
-            <div style={{ width: size, height: size, borderRadius: "50% 50% 50% 3px", transform: "rotate(45deg)", background: best ? "linear-gradient(135deg,#FF86B9,#FF7E5A)" : color, border: best ? "0" : "2px solid #0C0C11", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 9px rgba(0,0,0,0.5)" }}>
-              <svg viewBox="0 0 24 24" width={best ? 11 : 9} height={best ? 11 : 9} fill={best ? "#0C0C0E" : "#0C0C11"} style={{ transform: "rotate(-45deg)" }}><path d="M13 2 5 13h6l-1 9 9-12h-6z" /></svg>
+          <button
+            key={i}
+            type="button"
+            onClick={() => onSelect(i)}
+            aria-label={`Option ${i + 1}${w.o.walkingM != null ? `, ${w.o.walkingM} m Fußweg` : ""}`}
+            aria-pressed={active}
+            style={{ position: "absolute", ...pct(w.p), transform: "translate(-50%,-100%)", zIndex: active ? 3 : 2, background: "none", border: 0, padding: 8, margin: -8, cursor: "pointer" }}
+          >
+            <div style={{ width: size, height: size, borderRadius: "50% 50% 50% 3px", transform: "rotate(45deg)", background: active ? "linear-gradient(135deg,#FF86B9,#FF7E5A)" : color, border: active ? "0" : "2px solid #0C0C11", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: active ? "0 4px 12px rgba(255,126,90,0.45)" : "0 3px 9px rgba(0,0,0,0.5)" }}>
+              <svg viewBox="0 0 24 24" width={active ? 12 : 10} height={active ? 12 : 10} fill={active ? "#0C0C0E" : "#0C0C11"} style={{ transform: "rotate(-45deg)" }}><path d="M13 2 5 13h6l-1 9 9-12h-6z" /></svg>
             </div>
-          </div>
+          </button>
         );
       })}
 
-      {/* destination marker */}
-      <div style={{ position: "absolute", ...pct(destP), transform: "translate(-50%,-50%)", zIndex: 4, width: 15, height: 15, borderRadius: "50%", background: "#F2F2F4", border: "3px solid #0C0C11", boxShadow: "0 0 0 1px rgba(255,255,255,0.25)" }} />
+      {/* Ziel */}
+      <div style={{ position: "absolute", ...pct(destP), transform: "translate(-50%,-50%)", zIndex: 4, width: 15, height: 15, borderRadius: "50%", background: "#F2F2F4", border: "3px solid #0C0C11", boxShadow: "0 0 0 1px rgba(255,255,255,0.25)", pointerEvents: "none" }} />
 
-      {/* legend */}
-      <div className="mono" style={{ position: "absolute", left: 10, bottom: 10, display: "flex", gap: 12, fontSize: 9.5, color: "#B9B9C0", background: "rgba(10,10,12,0.62)", border: "1px solid var(--line)", borderRadius: 8, padding: "5px 9px" }}>
+      {/* Legende */}
+      <div className="mono" style={{ position: "absolute", left: 10, bottom: 10, display: "flex", gap: 12, fontSize: 9.5, color: "#B9B9C0", background: "rgba(10,10,12,0.62)", border: "1px solid var(--line)", borderRadius: 8, padding: "5px 9px", pointerEvents: "none" }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: "#5FD892" }} />FREI</span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: "#E0A24A" }} />BELEGT</span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><span style={{ width: 7, height: 7, borderRadius: "2px", background: "#F2F2F4" }} />ZIEL</span>

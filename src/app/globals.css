@@ -47,7 +47,9 @@ a:hover { color: #ffb093; }
   background: radial-gradient(circle at 42% 42%, rgba(255,118,180,0.52), rgba(255,122,89,0.34) 44%, rgba(255,177,110,0) 74%);
   filter: blur(56px);
 }
-.wrap > * { position: relative; z-index: 1; }
+/* Inhalt über den Blur heben — aber den Blur selbst NICHT aus absolute lösen,
+   sonst landet er im Textfluss und schiebt alles nach unten. */
+.wrap > *:not(.bloom) { position: relative; z-index: 1; }
 
 .display { font-family: var(--display); letter-spacing: -0.02em; }
 .mono { font-family: var(--mono); }

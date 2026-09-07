@@ -40,27 +40,29 @@ export default function Home() {
     <main className="wrap" style={{ height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div className="bloom" style={{ top: -120, right: -90, width: 420, height: 420, opacity: 0.95 }} />
 
+      {/* variabler Freiraum oben — nimmt, was übrig bleibt; Content sitzt unten */}
+      <div style={{ flex: "1 1 auto", minHeight: 12 }} />
+
       <div className="kicker" style={{ flex: "none" }}>Ladeplanner</div>
-      <h1 className="display" style={{ fontSize: 46, lineHeight: 1, fontWeight: 200, margin: "12px 0 20px", flex: "none" }}>
+      <h1 className="display" style={{ fontSize: 46, lineHeight: 1, fontWeight: 200, margin: "12px 0 22px", flex: "none" }}>
         Wohin?
       </h1>
 
-      <form method="get" action="/plan" style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-        <div className="field" style={{ flex: "none" }}>
+      <form method="get" action="/plan" style={{ display: "flex", flexDirection: "column", flex: "none" }}>
+        <div className="field">
           <span style={{ display: "flex" }}>{IconSearch}</span>
           <input name="q" required placeholder="Adresse oder Maps-Link" autoComplete="off" />
         </div>
 
-        <div className="kicker" style={{ margin: "20px 2px 10px", flex: "none" }}>Aufenthalt</div>
-        <div className="seg" style={{ flex: "none" }}>
+        <div className="kicker" style={{ margin: "22px 2px 10px" }}>Aufenthalt</div>
+        <div className="seg">
           <div><input type="radio" id="d-kurz" name="dwell" value="kurz" /><label htmlFor="d-kurz">Kurz</label></div>
           <div><input type="radio" id="d-paar" name="dwell" value="paar" /><label htmlFor="d-paar">2–3 Std</label></div>
           <div><input type="radio" id="d-lang" name="dwell" value="lang" defaultChecked /><label htmlFor="d-lang">Lang</label></div>
         </div>
 
-        <div className="kicker" style={{ margin: "22px 2px 4px", flex: "none" }}>Ziele</div>
-        {/* nur dieser Bereich flext/scrollt intern — der Button bleibt immer sichtbar */}
-        <div style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+        <div className="kicker" style={{ margin: "24px 2px 4px" }}>Ziele</div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
           {favorites.map((f) => (
             <a key={f.name} className="row" href={f.href}>
               <span className="glyph">{f.icon}</span>
@@ -73,10 +75,10 @@ export default function Home() {
           ))}
         </div>
 
-        <button type="submit" className="btn" style={{ flex: "none", marginTop: 14 }}>
+        <button type="submit" className="btn" style={{ marginTop: 22 }}>
           Laden finden {IconArrow}
         </button>
-        <p className="mono" style={{ color: "var(--faint)", fontSize: 10.5, lineHeight: 1.5, margin: "10px 0 0", textAlign: "center", flex: "none" }}>
+        <p className="mono" style={{ color: "var(--faint)", fontSize: 10.5, lineHeight: 1.5, margin: "12px 0 0", textAlign: "center" }}>
           Ladepunkte in Gehweite deines Ziels — passend zu Auto und Aufenthalt. Belegung live.
         </p>
       </form>
