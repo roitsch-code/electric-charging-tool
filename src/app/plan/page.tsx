@@ -1,9 +1,7 @@
 import Link from "next/link";
 import StartTripButton from "./StartTripButton";
 import {
-  driveToChargerUrl,
   planDestination,
-  spokenForPlan,
   walkFromChargerUrl,
   type RankedCharger,
 } from "@/lib/chargers";
@@ -19,291 +17,183 @@ const one = (v: string | string[] | undefined): string | null =>
   Array.isArray(v) ? (v[0] ?? null) : (v ?? null);
 
 const DEMAND_LABEL: Record<DemandClass, string> = {
-  ac_ok: "Aufenthalt lang — Wechselstrom (11 kW) reicht, günstiger",
-  ac_or_dc: "Mittlerer Aufenthalt — Wechselstrom oder Gleichstrom",
-  dc_required: "Kurzer Halt oder weite Rückfahrt — Schnelllader nötig",
+  ac_ok: "Langer Aufenthalt — Wechselstrom (11 kW) reicht und ist günstiger.",
+  ac_or_dc: "Mittlerer Aufenthalt — Wechselstrom oder Gleichstrom passt.",
+  dc_required: "Kurzer Halt oder weite Rückfahrt — Schnelllader nötig.",
 };
 
-const C = {
-  bg: "#0b0d10",
-  card: "#14181d",
-  card2: "#1b2129",
-  text: "#e6e8eb",
-  muted: "#9aa2ac",
-  accent: "#4ea1ff",
-  green: "#3fbf7f",
-  amber: "#e0a63b",
-  red: "#e0603b",
+const STATUS: Record<string, { label: string; color: string }> = {
+  available: { label: "Frei", color: "var(--free)" },
+  occupied: { label: "Belegt", color: "var(--busy)" },
+  outoforder: { label: "Defekt", color: "var(--broken)" },
+  unknown: { label: "Status unbekannt", color: "var(--unknown)" },
 };
 
-export default async function PlanPage({
-  searchParams,
-}: {
-  searchParams: Promise<SP>;
-}) {
+export default async function PlanPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
-
   const dest = await resolveDestination({
-    lat: one(sp.lat),
-    lng: one(sp.lng),
-    u: one(sp.u),
-    to: one(sp.to),
-    q: one(sp.q),
-    name: one(sp.name),
+    lat: one(sp.lat), lng: one(sp.lng), u: one(sp.u),
+    to: one(sp.to), q: one(sp.q), name: one(sp.name),
   });
-
   const input = parsePlanInput({ dwell: one(sp.dwell), return: one(sp.return) });
 
   return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "2rem 1.25rem" }}>
-      <Link href="/" style={{ color: C.muted, textDecoration: "none", fontSize: "0.85rem" }}>
-        ← Ladeplanner
-      </Link>
-
+    <main className="wrap" style={{ minHeight: "100dvh" }}>
+      <div className="bloom" style={{ top: 150, left: -60, width: 420, height: 340, opacity: 0.8 }} />
+      <TopBar />
       {!dest.ok || !dest.coords ? (
         <ManualFallback hint={dest.placeNameHint} reason={dest.reason} />
       ) : (
-        <Result coords={dest.coords} method={dest.method} input={input} />
+        <Result coords={dest.coords} input={input} />
       )}
-
-      <DemoLinks />
     </main>
   );
 }
 
+function TopBar() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
+      <Link href="/" className="glyph" aria-label="Zurück" style={{ color: "var(--fg)" }}>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m15 6-6 6 6 6" /></svg>
+      </Link>
+      <span className="mono" style={{ fontSize: 11, letterSpacing: "0.22em", color: "var(--faint)" }}>LADEPLANNER</span>
+    </div>
+  );
+}
+
 async function Result({
-  coords,
-  method,
-  input,
+  coords, input,
 }: {
   coords: { lat: number; lng: number; name?: string };
-  method?: string;
   input: ReturnType<typeof parsePlanInput>;
 }) {
-  const plan = await planDestination(
-    coords,
-    input,
-    getChargerSource(),
-    getAvailabilityProvider(),
-  );
-  const spoken = spokenForPlan(plan, input, 0);
+  const plan = await planDestination(coords, input, getChargerSource(), getAvailabilityProvider());
+  const best = plan.top[0];
+  const alternatives = plan.top.slice(1);
+  const dwellLabel =
+    input.dwellMinutes === null ? "" :
+    input.dwellMinutes <= 60 ? "KURZ" :
+    input.dwellMinutes <= 300 ? "2–3 STD" : "LANG";
 
   return (
     <>
-      <h1 style={{ fontSize: "1.5rem", marginBottom: 4 }}>
+      <div className="kicker">Ziel</div>
+      <h1 className="display" style={{ fontSize: 28, fontWeight: 300, margin: "5px 0 0", lineHeight: 1.05 }}>
         {coords.name ?? "Ziel"}
       </h1>
-      <p style={{ color: C.muted, marginTop: 0, fontSize: "0.85rem" }}>
-        {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
-        {method ? ` · aufgelöst via ${method}` : ""}
-        {input.dwellMinutes !== null ? ` · Aufenthalt ${input.dwellMinutes} min` : ""}
-        {input.returnTripKm !== null ? ` · Rückfahrt ${input.returnTripKm} km` : ""}
-      </p>
+      <div className="mono" style={{ fontSize: 11, color: "var(--faint)", marginTop: 8, letterSpacing: "0.02em" }}>
+        {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}{dwellLabel ? ` · ${dwellLabel}` : ""}
+      </div>
 
-      <p
-        style={{
-          background: C.card2,
-          borderLeft: `3px solid ${C.accent}`,
-          padding: "0.6rem 0.9rem",
-          borderRadius: 6,
-          fontSize: "0.9rem",
-        }}
-      >
-        {DEMAND_LABEL[plan.demandClass]}
-      </p>
-
-      {/* Sprechtext-Vorschau (Konzept §6.6) */}
-      {spoken && (
-        <section style={{ marginTop: "1.25rem" }}>
-          <h2 style={{ fontSize: "0.8rem", color: C.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
-            Ansage (wird vorgelesen)
-          </h2>
-          <blockquote
-            style={{
-              margin: 0,
-              background: C.card,
-              padding: "0.9rem 1rem",
-              borderRadius: 8,
-              fontSize: "1rem",
-              fontStyle: "italic",
-            }}
-          >
-            🔊 {spoken}
-          </blockquote>
-        </section>
-      )}
+      <div style={{ display: "flex", gap: 11, alignItems: "flex-start", borderTop: "1px solid var(--line-2)", borderBottom: "1px solid var(--line-2)", padding: "14px 0", margin: "20px 0" }}>
+        <span style={{ color: "var(--coral)", flex: "none", marginTop: 1 }}>
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><path d="M12 8h.01M11 12h1v4h1" /></svg>
+        </span>
+        <span style={{ fontSize: 14, lineHeight: 1.45 }}>{DEMAND_LABEL[plan.demandClass]}</span>
+      </div>
 
       {plan.expanded && (
-        <p style={{ color: C.amber, fontSize: "0.85rem", marginTop: "1rem" }}>
-          ⚠️ Nichts in 500 m — Umkreis auf {plan.usedRadiusM} m erweitert.
+        <p className="mono" style={{ color: "var(--busy)", fontSize: 11, marginBottom: 12 }}>
+          NICHTS IN 500 M — UMKREIS AUF {plan.usedRadiusM} M ERWEITERT
         </p>
       )}
 
-      <h2 style={{ fontSize: "1rem", marginTop: "1.5rem" }}>
-        {plan.top.length > 0 ? `Top ${plan.top.length}` : "Keine Ladepunkte in Gehdistanz"}
-      </h2>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-        {plan.top.map((r) => (
-          <ChargerCard key={r.charger.evseId} r={r} dest={coords} />
-        ))}
-      </div>
-
-      {plan.top.length > 0 && (
-        <StartTripButton
-          destLat={coords.lat}
-          destLng={coords.lng}
-          destName={coords.name}
-          dwellMinutes={input.dwellMinutes}
-          returnTripKm={input.returnTripKm}
-        />
+      {best ? (
+        <>
+          <BestCard r={best} dest={coords} input={input} />
+          {alternatives.length > 0 && (
+            <>
+              <div className="kicker" style={{ margin: "24px 2px 2px" }}>Alternativen</div>
+              {alternatives.map((r) => <AltRow key={r.charger.evseId} r={r} dest={coords} />)}
+            </>
+          )}
+        </>
+      ) : (
+        <p style={{ color: "var(--muted)", fontSize: 15 }}>Keine Ladepunkte in Gehdistanz gefunden.</p>
       )}
 
-      <p style={{ color: C.muted, fontSize: "0.75rem", marginTop: "1.25rem" }}>
-        {plan.candidateCount} Kandidat(en) im {plan.usedRadiusM}-m-Umkreis.
-        Verfügbarkeitsdaten stammen vom Betreiber — ohne Realtime steht
-        „Status unbekannt“. Gehdistanzen sind aus der Luftlinie geschätzt
-        (Umwegfaktor 1,3), bis echtes Fußwege-Routing angebunden ist.
+      <p className="mono" style={{ color: "var(--faint)", fontSize: 10, lineHeight: 1.6, marginTop: 20 }}>
+        {plan.candidateCount} KANDIDAT(EN) IM {plan.usedRadiusM}-M-UMKREIS · BELEGUNG LIVE (AFIR / TOMTOM) · GEHWEG GESCHÄTZT
       </p>
     </>
   );
 }
 
-function ChargerCard({
-  r,
-  dest,
-}: {
-  r: RankedCharger;
-  dest: { lat: number; lng: number };
-}) {
+function powerLabel(c: RankedCharger["charger"]) {
+  return c.connector === "dc" ? "Gleichstrom" : "Wechselstrom";
+}
+
+function BestCard({ r, dest, input }: { r: RankedCharger; dest: { lat: number; lng: number; name?: string }; input: ReturnType<typeof parsePlanInput> }) {
   const c = r.charger;
-  const capped = c.connector === "dc" && r.usablePowerKw < c.powerKw;
+  const st = STATUS[c.status ?? "unknown"] ?? STATUS.unknown!;
   return (
-    <div style={{ background: C.card, borderRadius: 10, padding: "0.9rem 1rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <div>
-          <span
-            style={{
-              display: "inline-block",
-              minWidth: 22,
-              textAlign: "center",
-              background: r.rank === 1 ? C.accent : C.card2,
-              color: r.rank === 1 ? "#00121f" : C.text,
-              borderRadius: 6,
-              fontWeight: 700,
-              fontSize: "0.8rem",
-              padding: "1px 6px",
-              marginRight: 8,
-            }}
-          >
-            {r.rank}
-          </span>
-          <strong>{c.name}</strong>
-          {c.atDestination && (
-            <span style={{ color: C.green, fontSize: "0.8rem", marginLeft: 8 }}>
-              am Ziel
-            </span>
-          )}
+    <div className="card" style={{ marginTop: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "13px 16px", borderBottom: "1px solid var(--line-2)" }}>
+        <span className="kicker" style={{ color: "var(--muted)" }}>Beste Wahl</span>
+        <span className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 600, color: st.color }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: st.color }} />{st.label}
+        </span>
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={{ fontSize: 20, fontWeight: 400 }}>{c.name}</div>
+        <div className="metrics" style={{ marginTop: 14 }}>
+          <div className="metric">
+            <div className="v">{c.atDestination ? "0" : r.walkingM}<small> m</small></div>
+            <div className="k">{c.atDestination ? "am Ziel" : "Fußweg"}</div>
+          </div>
+          <div className="metric">
+            <div className="v">{r.usablePowerKw}<small> kW</small></div>
+            <div className="k">{powerLabel(c)}</div>
+          </div>
         </div>
-        <StatusPill r={r} />
-      </div>
-
-      <div style={{ color: C.muted, fontSize: "0.85rem", marginTop: 6 }}>
-        {c.connector === "dc" ? "Gleichstrom" : "Wechselstrom"} ·{" "}
-        {capped ? (
-          <span>
-            {c.powerKw} kW Säule, davon <strong style={{ color: C.text }}>{r.usablePowerKw} kW</strong> nutzbar
-          </span>
-        ) : (
-          <span>{c.powerKw} kW</span>
-        )}{" "}
-        · {c.atDestination ? "direkt am Ziel" : `${r.walkingM} m Fußweg`}
-      </div>
-
-      <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-        <a href={driveToChargerUrl(c)} style={btn(C.accent)}>
-          Hinfahren
-        </a>
-        <a href={walkFromChargerUrl(c, dest)} style={btn(C.card2)}>
-          Fußweg zum Ziel
-        </a>
+        <div className="mono" style={{ fontSize: 10, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--faint)", marginTop: 12 }}>
+          {c.statusUpdatedAt ? `● Live · ${relTime(c.statusUpdatedAt)}` : "Keine Realtime-Daten"}
+        </div>
+        <div style={{ display: "flex", gap: 9, marginTop: 15 }}>
+          <StartTripButton destLat={dest.lat} destLng={dest.lng} destName={dest.name} dwellMinutes={input.dwellMinutes} returnTripKm={input.returnTripKm} />
+          <a className="btn ghost icon" href={walkFromChargerUrl(c, dest)} aria-label="Fußweg zum Ziel">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="13" cy="4" r="1.8" /><path d="m8 21 3-7-3-2 1.5-5 3 3 3 1M7.5 13.5 6 21" /></svg>
+          </a>
+        </div>
       </div>
     </div>
   );
 }
 
-function StatusPill({ r }: { r: RankedCharger }) {
-  const s = r.charger.status ?? "unknown";
-  const map: Record<string, { label: string; color: string }> = {
-    available: { label: "frei", color: C.green },
-    occupied: { label: "belegt", color: C.amber },
-    outoforder: { label: "defekt", color: C.red },
-    unknown: { label: "Status unbekannt", color: C.muted },
-  };
-  const { label, color } = map[s] ?? map.unknown!;
+function AltRow({ r, dest }: { r: RankedCharger; dest: { lat: number; lng: number } }) {
+  const c = r.charger;
+  const st = STATUS[c.status ?? "unknown"] ?? STATUS.unknown!;
   return (
-    <div style={{ textAlign: "right" }}>
-      <span style={{ color, fontSize: "0.85rem", fontWeight: 600 }}>● {label}</span>
-      <div style={{ color: C.muted, fontSize: "0.72rem" }}>
-        {r.charger.statusUpdatedAt ? relTime(r.charger.statusUpdatedAt) : "keine Realtime-Daten"}
-      </div>
-    </div>
+    <a className="row" href={walkFromChargerUrl(c, dest)} style={{ textDecoration: "none" }}>
+      <span className="mono" style={{ fontSize: 11, color: "var(--faint)", width: 20, flex: "none" }}>
+        {String(r.rank).padStart(2, "0")}
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</span>
+        <span className="mono" style={{ display: "block", fontSize: 11, color: "var(--faint)", marginTop: 2 }}>
+          {c.atDestination ? "AM ZIEL" : `${r.walkingM} M`} · {c.connector === "dc" ? "DC" : "AC"} · {r.usablePowerKw} KW
+        </span>
+      </span>
+      <span className="mono" style={{ fontSize: 10.5, fontWeight: 600, color: st.color, textTransform: "uppercase" }}>{st.label}</span>
+    </a>
   );
 }
 
 function ManualFallback({ hint, reason }: { hint?: string; reason?: string }) {
   return (
-    <section style={{ marginTop: "1.5rem" }}>
-      <h1 style={{ fontSize: "1.4rem" }}>Ziel manuell eingeben</h1>
-      <p style={{ color: C.muted, fontSize: "0.9rem" }}>
-        Die automatische Auflösung ist fehlgeschlagen ({reason ?? "unbekannt"}).
-        Das ist der eingeplante Stufe-3-Fallback (Konzept §4).
+    <section>
+      <div className="kicker">Ziel manuell</div>
+      <h1 className="display" style={{ fontSize: 26, fontWeight: 300, margin: "5px 0 10px" }}>Ziel eingeben</h1>
+      <p style={{ color: "var(--muted)", fontSize: 14, lineHeight: 1.5 }}>
+        Automatische Auflösung fehlgeschlagen ({reason ?? "unbekannt"}). Gib Adresse oder Ort direkt ein.
       </p>
-      <form method="get" action="/plan" style={{ marginTop: "1rem" }}>
-        <input
-          name="to"
-          defaultValue={hint ?? ""}
-          placeholder="Adresse oder Ortsname, z. B. Kurhaus Baden-Baden"
-          style={inputStyle}
-        />
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          <input name="dwell" placeholder="Dauer (kurz/paar/nacht)" style={inputStyle} />
-          <input name="return" placeholder="Rückfahrt km" style={inputStyle} />
+      <form method="get" action="/plan" style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="field">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="var(--faint)" strokeWidth="1.7" strokeLinecap="round"><path d="M20 10c0 5.5-8 11-8 11s-8-5.5-8-11a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="2.6" /></svg>
+          <input name="to" defaultValue={hint ?? ""} placeholder="Adresse oder Ortsname" />
         </div>
-        <button type="submit" style={{ ...btn(C.accent), marginTop: 10, border: "none", cursor: "pointer" }}>
-          Planen
-        </button>
+        <button type="submit" className="btn">Planen</button>
       </form>
-    </section>
-  );
-}
-
-function DemoLinks() {
-  return (
-    <section style={{ marginTop: "2.5rem", borderTop: `1px solid ${C.card2}`, paddingTop: "1rem" }}>
-      <h2 style={{ fontSize: "0.8rem", color: C.muted, textTransform: "uppercase", letterSpacing: 0.5 }}>
-        Demo (Seed-Daten)
-      </h2>
-      <ul style={{ lineHeight: 1.9, fontSize: "0.9rem" }}>
-        <li>
-          <Link href="/plan?lat=53.5510&lng=9.9215&name=Gastwerk%20Hotel%20Hamburg&dwell=nacht" style={{ color: C.accent }}>
-            Gastwerk Hotel, über Nacht
-          </Link>{" "}
-          <span style={{ color: C.muted }}>→ AC am Ziel gewinnt</span>
-        </li>
-        <li>
-          <Link href="/plan?lat=53.5510&lng=9.9215&name=Gastwerk%20Hotel%20Hamburg&dwell=kurz&return=300" style={{ color: C.accent }}>
-            Gastwerk Hotel, kurzer Halt + 300 km zurück
-          </Link>{" "}
-          <span style={{ color: C.muted }}>→ Schnelllader gewinnt</span>
-        </li>
-        <li>
-          <Link href="/plan?lat=53.2000&lng=7.5000&name=Landgasthof&dwell=paar" style={{ color: C.accent }}>
-            Ländliches Ziel
-          </Link>{" "}
-          <span style={{ color: C.muted }}>→ Radius-Erweiterung</span>
-        </li>
-      </ul>
     </section>
   );
 }
@@ -312,31 +202,5 @@ function relTime(iso: string): string {
   const diffMin = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
   if (diffMin < 1) return "gerade aktualisiert";
   if (diffMin < 60) return `aktualisiert vor ${diffMin} min`;
-  const h = Math.round(diffMin / 60);
-  return `aktualisiert vor ${h} h`;
+  return `aktualisiert vor ${Math.round(diffMin / 60)} h`;
 }
-
-function btn(bg: string): React.CSSProperties {
-  return {
-    background: bg,
-    color: bg === C.accent ? "#00121f" : C.text,
-    padding: "0.45rem 0.8rem",
-    borderRadius: 7,
-    textDecoration: "none",
-    fontSize: "0.85rem",
-    fontWeight: 600,
-    display: "inline-block",
-  };
-}
-
-const inputStyle: React.CSSProperties = {
-  flex: 1,
-  width: "100%",
-  boxSizing: "border-box",
-  background: C.card,
-  border: `1px solid ${C.card2}`,
-  borderRadius: 7,
-  color: C.text,
-  padding: "0.55rem 0.7rem",
-  fontSize: "0.9rem",
-};

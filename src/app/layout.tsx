@@ -1,5 +1,20 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { Archivo, JetBrains_Mono } from "next/font/google";
+import "./globals.css";
+
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600"],
+  variable: "--font-archivo",
+  display: "swap",
+});
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Ladeplanner",
@@ -9,18 +24,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="de">
-      <body
-        style={{
-          margin: 0,
-          fontFamily:
-            "system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
-          background: "#0b0d10",
-          color: "#e6e8eb",
-        }}
-      >
-        {children}
-      </body>
+    <html lang="de" className={`${archivo.variable} ${jetbrains.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

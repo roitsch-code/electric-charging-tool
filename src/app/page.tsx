@@ -1,142 +1,86 @@
+const IconSearch = (
+  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+    <circle cx="11" cy="11" r="7" /><path d="m20 20-3.2-3.2" />
+  </svg>
+);
+const IconArrow = (
+  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
+const IconChevron = (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--faint)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m9 6 6 6-6 6" />
+  </svg>
+);
+const IconHotel = (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
+    <path d="M3 21h18M5 21V5h9v16M14 9h5v12M8 9h2M8 13h2" />
+  </svg>
+);
+const IconHome = (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
+    <path d="m3 11 9-7 9 7M5 10v10h14V10" />
+  </svg>
+);
+const IconSpa = (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
+    <path d="M12 3v18M5 8l7-5 7 5M5 8v13M19 8v13M3 21h18" />
+  </svg>
+);
+
+const favorites = [
+  { icon: IconHotel, name: "GINN Hotel", sub: "HAMBURG · ÜBER NACHT", href: "/plan?lat=53.5465&lng=9.9367&name=GINN%20Hotel%20Hamburg&dwell=lang" },
+  { icon: IconHome, name: "Zuhause", sub: "LÜNEBURG", href: "/plan?lat=53.2465&lng=10.4141&name=Zuhause&dwell=lang" },
+  { icon: IconSpa, name: "Kurhaus", sub: "BADEN-BADEN", href: "/plan?lat=48.7606&lng=8.2386&name=Kurhaus%20Baden-Baden&dwell=paar" },
+];
+
 export default function Home() {
   return (
-    <main style={{ maxWidth: 720, margin: "0 auto", padding: "3rem 1.25rem" }}>
-      <h1 style={{ fontSize: "1.9rem", marginBottom: "0.25rem" }}>Ladeplanner</h1>
-      <p style={{ color: "#9aa2ac", marginTop: 0 }}>
-        Zielzentrierte Ladeplanung für E-Autos. Laden am Zielort, nicht auf der
-        Autobahn.
-      </p>
+    <main className="wrap" style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
+      <div className="bloom" style={{ top: -140, right: -90, width: 360, height: 360 }} />
 
-      {/* Eingabe: Google-Maps-Link ODER Adresse einfuegen (kein Kurzbefehl noetig). */}
-      <form
-        method="get"
-        action="/plan"
-        style={{
-          marginTop: "1.5rem",
-          background: "#14181d",
-          padding: "1rem",
-          borderRadius: 12,
-        }}
-      >
-        <label style={{ display: "block", fontSize: "0.85rem", color: "#9aa2ac", marginBottom: 6 }}>
-          Google-Maps-Link einfügen oder Adresse eingeben
-        </label>
-        <input
-          name="q"
-          required
-          placeholder="z. B. https://maps.app.goo.gl/… oder Große Elbstraße 39 Hamburg"
-          style={{
-            width: "100%",
-            boxSizing: "border-box",
-            background: "#0b0d10",
-            border: "1px solid #1b2129",
-            borderRadius: 8,
-            color: "#e6e8eb",
-            padding: "0.7rem 0.8rem",
-            fontSize: "1rem",
-          }}
-        />
-        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-          <select
-            name="dwell"
-            defaultValue="nacht"
-            style={{
-              flex: 1,
-              minWidth: 160,
-              background: "#0b0d10",
-              border: "1px solid #1b2129",
-              borderRadius: 8,
-              color: "#e6e8eb",
-              padding: "0.7rem 0.8rem",
-              fontSize: "1rem",
-            }}
-          >
-            <option value="kurz">Kurz (unter 1 h)</option>
-            <option value="paar">Paar Stunden</option>
-            <option value="nacht">Über Nacht</option>
-            <option value="laenger">Länger</option>
-          </select>
-          <button
-            type="submit"
-            style={{
-              background: "#4ea1ff",
-              color: "#00121f",
-              border: "none",
-              borderRadius: 8,
-              padding: "0.7rem 1.2rem",
-              fontSize: "1rem",
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            Laden finden
-          </button>
+      <div className="kicker">Ladeplanner</div>
+      <h1 className="display" style={{ fontSize: 52, lineHeight: 1, fontWeight: 200, margin: "18px 0 26px" }}>
+        Wohin?
+      </h1>
+
+      <form method="get" action="/plan" style={{ display: "flex", flexDirection: "column" }}>
+        <div className="field">
+          <span style={{ display: "flex" }}>{IconSearch}</span>
+          <input name="q" required placeholder="Adresse oder Maps-Link" autoComplete="off" />
         </div>
+
+        <div className="kicker" style={{ margin: "26px 2px 10px" }}>Aufenthalt</div>
+        <div className="seg">
+          <div><input type="radio" id="d-kurz" name="dwell" value="kurz" /><label htmlFor="d-kurz">Kurz</label></div>
+          <div><input type="radio" id="d-paar" name="dwell" value="paar" /><label htmlFor="d-paar">2–3 Std</label></div>
+          <div><input type="radio" id="d-lang" name="dwell" value="lang" defaultChecked /><label htmlFor="d-lang">Lang</label></div>
+        </div>
+
+        <div className="kicker" style={{ margin: "30px 2px 4px" }}>Zuletzt</div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {favorites.map((f) => (
+            <a key={f.name} className="row" href={f.href}>
+              <span className="glyph">{f.icon}</span>
+              <span style={{ flex: 1 }}>
+                <span style={{ display: "block", fontSize: 16 }}>{f.name}</span>
+                <span className="mono" style={{ display: "block", fontSize: 11, color: "var(--faint)", marginTop: 2 }}>{f.sub}</span>
+              </span>
+              {IconChevron}
+            </a>
+          ))}
+        </div>
+
+        <div style={{ flex: 1, minHeight: 26 }} />
+
+        <button type="submit" className="btn">
+          Laden finden {IconArrow}
+        </button>
+        <p className="mono" style={{ color: "var(--faint)", fontSize: 11, lineHeight: 1.55, marginTop: 16, textAlign: "center" }}>
+          Ladepunkte in Gehweite deines Ziels — passend zu Auto und Aufenthalt. Belegung live.
+        </p>
       </form>
-
-      <section style={{ marginTop: "2rem" }}>
-        <h2 style={{ fontSize: "1.1rem" }}>Status</h2>
-        <ul style={{ lineHeight: 1.8 }}>
-          <li>M1 — Resolver (Link → Koordinaten): erledigt</li>
-          <li>M2 — DE-weiter Datenbestand (BNetzA-API, PostGIS): live</li>
-          <li>M3 — Ranking + Ergebnisseite: erledigt</li>
-          <li>M4 — Live-Belegung (TomTom, on-demand): live</li>
-          <li>M5 — „Losfahren“ + Push vor Ankunft (ntfy): erledigt</li>
-        </ul>
-      </section>
-
-      <section style={{ marginTop: "1.5rem" }}>
-        <h2 style={{ fontSize: "1.1rem" }}>Live-Demo (Seed-Daten)</h2>
-        <ul style={{ lineHeight: 1.9 }}>
-          <li>
-            <a
-              href="/plan?lat=53.5510&lng=9.9215&name=Gastwerk%20Hotel%20Hamburg&dwell=nacht"
-              style={{ color: "#4ea1ff" }}
-            >
-              Gastwerk Hotel Hamburg — über Nacht
-            </a>
-          </li>
-          <li>
-            <a
-              href="/plan?lat=53.5510&lng=9.9215&name=Gastwerk%20Hotel%20Hamburg&dwell=kurz&return=300"
-              style={{ color: "#4ea1ff" }}
-            >
-              Gastwerk Hotel Hamburg — kurzer Halt, 300 km Rückfahrt
-            </a>
-          </li>
-          <li>
-            <a
-              href="/plan?lat=53.2000&lng=7.5000&name=Landgasthof&dwell=paar"
-              style={{ color: "#4ea1ff" }}
-            >
-              Ländliches Ziel — Radius-Erweiterung
-            </a>
-          </li>
-        </ul>
-      </section>
-
-      <section style={{ marginTop: "1.5rem" }}>
-        <h2 style={{ fontSize: "1.1rem" }}>API</h2>
-        <pre
-          style={{
-            background: "#14181d",
-            padding: "1rem",
-            borderRadius: 8,
-            overflowX: "auto",
-            fontSize: "0.85rem",
-          }}
-        >
-{`POST /api/destinations
-  { "shareUrl": "https://maps.app.goo.gl/…",
-    "dwellMinutes": 480, "returnTripKm": 0 }
-
-GET  /api/destinations/:id`}
-        </pre>
-      </section>
-
-      <p style={{ marginTop: "2rem", color: "#9aa2ac", fontSize: "0.85rem" }}>
-        Details siehe <code>docs/konzept.md</code>.
-      </p>
     </main>
   );
 }

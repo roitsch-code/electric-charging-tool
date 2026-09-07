@@ -3,22 +3,9 @@
 import { useState } from "react";
 
 /**
- * "Losfahren"-Knopf (Konzept §6.4). Holt den aktuellen Standort per Browser-
- * Geolocation, legt eine Fahrt an (POST /api/trips) und zeigt an, wann der Push
- * kommt. Kein Geofencing, kein Dauer-Tracking — ein Zeitpunkt reicht (§6).
- *
- * Voraussetzung: HTTPS (haben wir) + Standortfreigabe im Browser.
+ * "Losfahren"-Knopf (Konzept §6.4). Browser-Geolocation -> Fahrt anlegen
+ * (POST /api/trips) -> Push wird geplant. Dark-Theme, Coral-Gradient.
  */
-
-const C = {
-  card: "#14181d",
-  card2: "#1b2129",
-  text: "#e6e8eb",
-  muted: "#9aa2ac",
-  accent: "#4ea1ff",
-  green: "#3fbf7f",
-  red: "#e0603b",
-};
 
 type State =
   | { phase: "idle" }
@@ -26,6 +13,12 @@ type State =
   | { phase: "scheduling" }
   | { phase: "done"; notifyAt: string; eta: string; leadMinutes: number; source: string }
   | { phase: "error"; message: string };
+
+const ArrowIcon = (
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </svg>
+);
 
 export default function StartTripButton(props: {
   destLat: number;
@@ -42,23 +35,21 @@ export default function StartTripButton(props: {
       return;
     }
     setState({ phase: "locating" });
-
     let pos: GeolocationPosition;
     try {
       pos = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0,
+          enableHighAccuracy: true, timeout: 15000, maximumAge: 0,
         });
       });
     } catch (e) {
       const err = e as GeolocationPositionError;
-      const msg =
-        err?.code === 1
-          ? "Standortfreigabe abgelehnt. Bitte in den Browser-Einstellungen erlauben."
-          : "Standort konnte nicht ermittelt werden.";
-      setState({ phase: "error", message: msg });
+      setState({
+        phase: "error",
+        message: err?.code === 1
+          ? "Standortfreigabe abgelehnt — bitte im Browser erlauben."
+          : "Standort konnte nicht ermittelt werden.",
+      });
       return;
     }
 
@@ -69,31 +60,20 @@ export default function StartTripButton(props: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           origin: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-          lat: props.destLat,
-          lng: props.destLng,
-          name: props.destName,
-          dwell: props.dwellMinutes,
-          return: props.returnTripKm,
+          lat: props.destLat, lng: props.destLng, name: props.destName,
+          dwell: props.dwellMinutes, return: props.returnTripKm,
         }),
       });
       const data = (await res.json()) as {
-        ok?: boolean;
-        notifyAt?: string;
-        eta?: string;
-        leadMinutes?: number;
-        etaSource?: string;
-        error?: string;
+        ok?: boolean; notifyAt?: string; eta?: string; leadMinutes?: number; etaSource?: string; error?: string;
       };
       if (!res.ok || !data.ok || !data.notifyAt || !data.eta) {
         setState({ phase: "error", message: data.error ?? "Fahrt konnte nicht angelegt werden." });
         return;
       }
       setState({
-        phase: "done",
-        notifyAt: data.notifyAt,
-        eta: data.eta,
-        leadMinutes: data.leadMinutes ?? 0,
-        source: data.etaSource ?? "estimated",
+        phase: "done", notifyAt: data.notifyAt, eta: data.eta,
+        leadMinutes: data.leadMinutes ?? 0, source: data.etaSource ?? "estimated",
       });
     } catch {
       setState({ phase: "error", message: "Netzwerkfehler beim Anlegen der Fahrt." });
@@ -102,25 +82,13 @@ export default function StartTripButton(props: {
 
   if (state.phase === "done") {
     return (
-      <div
-        style={{
-          background: C.card,
-          borderLeft: `3px solid ${C.green}`,
-          borderRadius: 8,
-          padding: "0.9rem 1rem",
-          marginTop: "1.25rem",
-        }}
-      >
-        <strong style={{ color: C.green }}>● Fahrt läuft</strong>
-        <div style={{ color: C.text, fontSize: "0.9rem", marginTop: 6 }}>
-          Push um <strong>{fmt(state.notifyAt)}</strong> Uhr (
-          {state.leadMinutes} min vor Ankunft, geplant {fmt(state.eta)} Uhr).
+      <div style={{ flex: 1, background: "rgba(95,216,146,0.08)", border: "1px solid rgba(95,216,146,0.22)", borderRadius: 15, padding: "13px 15px" }}>
+        <div className="mono" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", color: "var(--free)", textTransform: "uppercase" }}>● Fahrt läuft</div>
+        <div style={{ fontSize: 13.5, color: "var(--fg)", marginTop: 5 }}>
+          Push um <strong className="mono">{fmt(state.notifyAt)}</strong> Uhr · {state.leadMinutes} min vor Ankunft
         </div>
-        <div style={{ color: C.muted, fontSize: "0.78rem", marginTop: 6 }}>
-          {state.source === "google"
-            ? "Ankunftszeit mit Live-Verkehr (Google)."
-            : "Ankunftszeit geschätzt (ohne Verkehrsdaten)."}{" "}
-          Die Belegung wird kurz vor dem Push erneut live geprüft.
+        <div className="mono" style={{ fontSize: 10, color: "var(--faint)", marginTop: 4, textTransform: "uppercase" }}>
+          {state.source === "google" ? "ETA mit Live-Verkehr" : "ETA geschätzt"} · Belegung wird vorm Push live geprüft
         </div>
       </div>
     );
@@ -128,45 +96,17 @@ export default function StartTripButton(props: {
 
   const busy = state.phase === "locating" || state.phase === "scheduling";
   return (
-    <div style={{ marginTop: "1.25rem" }}>
-      <button
-        onClick={start}
-        disabled={busy}
-        style={{
-          background: busy ? C.card2 : C.accent,
-          color: busy ? C.muted : "#00121f",
-          border: "none",
-          borderRadius: 8,
-          padding: "0.8rem 1.4rem",
-          fontSize: "1rem",
-          fontWeight: 700,
-          cursor: busy ? "default" : "pointer",
-          width: "100%",
-        }}
-      >
-        {state.phase === "locating"
-          ? "Standort wird geholt…"
-          : state.phase === "scheduling"
-            ? "Fahrt wird angelegt…"
-            : "🚗 Losfahren — Push vor Ankunft"}
+    <div style={{ flex: 1 }}>
+      <button className="btn" onClick={start} disabled={busy} style={{ width: "100%" }}>
+        {state.phase === "locating" ? "Standort…" : state.phase === "scheduling" ? "Anlegen…" : <>Losfahren {ArrowIcon}</>}
       </button>
       {state.phase === "error" && (
-        <p style={{ color: C.red, fontSize: "0.85rem", marginTop: 8 }}>{state.message}</p>
-      )}
-      {state.phase === "idle" && (
-        <p style={{ color: C.muted, fontSize: "0.78rem", marginTop: 8 }}>
-          Fragt einmal den Standort ab und schickt dir kurz vor Ankunft eine
-          Mitteilung mit der besten freien Ladesäule.
-        </p>
+        <p style={{ color: "var(--broken)", fontSize: 12.5, marginTop: 8, marginBottom: 0 }}>{state.message}</p>
       )}
     </div>
   );
 }
 
-/** ISO -> lokale HH:MM. */
 function fmt(iso: string): string {
-  return new Date(iso).toLocaleTimeString("de-DE", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 }

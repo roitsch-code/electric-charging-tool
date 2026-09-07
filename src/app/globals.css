@@ -1,0 +1,109 @@
+/* Ladeplanner Design-System — dunkel, minimal (Vexto), dreamy Coral-Akzent. */
+:root {
+  --bg: #0A0A0C;
+  --panel: #141418;
+  --panel-2: #1A1A20;
+  --field: #0F0F13;
+  --fg: #F2F2F4;
+  --muted: #8A8A92;
+  --faint: #5E5E66;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.06);
+  --free: #5FD892;
+  --busy: #E0A24A;
+  --broken: #E05B5B;
+  --unknown: #7E8388;
+  --ink: #0C0C0E;
+  --grad: linear-gradient(110deg, #FF86B9, #FF7E5A);
+  --coral: #FF7E5A;
+  --mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --display: var(--font-archivo), system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: #ff8f6b; text-decoration: none; }
+a:hover { color: #ffb093; }
+
+.wrap { max-width: 440px; margin: 0 auto; padding: 56px 22px calc(40px + env(safe-area-inset-bottom)); position: relative; }
+
+/* dreamy bloom */
+.bloom {
+  position: absolute; border-radius: 50%; pointer-events: none; z-index: 0;
+  background: radial-gradient(circle at 42% 42%, rgba(255,118,180,0.34), rgba(255,122,89,0.20) 46%, rgba(255,177,110,0) 72%);
+  filter: blur(48px);
+}
+.wrap > * { position: relative; z-index: 1; }
+
+.display { font-family: var(--display); letter-spacing: -0.02em; }
+.mono { font-family: var(--mono); }
+.kicker {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--faint);
+}
+
+/* search field */
+.field {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--field); border: 1px solid var(--line);
+  border-radius: 16px; padding: 15px 16px;
+}
+.field:focus-within { border-color: var(--coral); box-shadow: 0 0 0 3px rgba(255,126,90,0.10); }
+.field svg { flex: none; color: var(--faint); }
+.field input {
+  border: 0; outline: 0; background: transparent; color: var(--fg);
+  font-size: 16px; width: 100%; font-family: inherit;
+}
+.field input::placeholder { color: var(--faint); }
+
+/* segmented dwell control (radios) */
+.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.seg input { position: absolute; opacity: 0; width: 0; height: 0; }
+.seg label {
+  display: block; text-align: center; font-family: var(--mono);
+  font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--muted); padding: 13px 4px; border: 1px solid var(--line);
+  border-radius: 12px; cursor: pointer; transition: background 0.15s;
+}
+.seg input:checked + label { background: var(--grad); color: var(--ink); font-weight: 600; border-color: transparent; }
+.seg input:focus-visible + label { box-shadow: 0 0 0 3px rgba(255,126,90,0.25); }
+
+/* buttons */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  border: none; border-radius: 15px; padding: 16px;
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.07em; text-transform: uppercase; cursor: pointer;
+  width: 100%; color: var(--ink); background: var(--grad);
+}
+.btn:active { opacity: 0.9; }
+.btn:disabled { opacity: 0.6; cursor: default; }
+.btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); width: auto; }
+.btn.icon { width: 50px; flex: none; padding: 15px 0; }
+
+/* cards + rows */
+.card { background: rgba(22, 22, 27, 0.72); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+.row {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  padding: 15px 2px; border-top: 1px solid var(--line-2);
+  color: var(--fg); background: transparent; text-align: left;
+  border-left: 0; border-right: 0; border-bottom: 0; cursor: pointer; font: inherit;
+}
+.row:last-of-type { border-bottom: 1px solid var(--line-2); }
+.glyph {
+  width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; color: var(--muted); flex: none;
+}
+
+/* metrics */
+.metrics { display: flex; gap: 24px; }
+.metric .v { font-family: var(--display); font-size: 24px; font-weight: 200; }
+.metric .v small { font-size: 14px; color: var(--muted); font-weight: 200; }
+.metric .k { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin-top: 4px; }
