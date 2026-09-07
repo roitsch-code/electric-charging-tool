@@ -18,6 +18,7 @@
     "db:postgis": "psql \"$DATABASE_URL\" -f prisma/sql/postgis.sql",
     "db:trips": "psql \"$DATABASE_URL\" -f prisma/sql/trips.sql",
     "import:afir": "tsx scripts/import-afir.ts",
+    "mobilithek:inspect": "tsx scripts/mobilithek-inspect.ts",
     "import:bnetza": "tsx scripts/import-bnetza.ts",
     "import:ocm": "tsx scripts/import-ocm.ts",
     "import:ocpdb": "tsx scripts/import-ocpdb.ts",
