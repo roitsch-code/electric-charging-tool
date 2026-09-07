@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
+    "fast-xml-parser": "^4.5.7",
     "leaflet": "^1.9.4",
     "next": "^15.1.4",
     "react": "^19.0.0",

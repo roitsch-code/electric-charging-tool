@@ -45,14 +45,21 @@ async function main() {
   console.log(`HTTP ${res.status} · ${res.body.length} Zeichen\n`);
 
   let root: unknown;
+  let format = "json";
   try {
     root = JSON.parse(res.body);
   } catch {
-    console.log("Kein JSON — erste 600 Zeichen:\n", res.body.slice(0, 600));
-    return;
+    format = "xml";
+    const { XMLParser } = await import("fast-xml-parser");
+    const parser = new XMLParser({
+      removeNSPrefix: true, // ns2:messageContainer -> messageContainer
+      ignoreAttributes: false,
+      attributeNamePrefix: "@_",
+    });
+    root = parser.parse(res.body);
   }
 
-  console.log("=== STRUKTUR-GERÜST ===");
+  console.log(`=== STRUKTUR-GERÜST (${format}) ===`);
   console.log(JSON.stringify(skeleton(root), null, 1));
 }
 
