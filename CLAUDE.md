@@ -93,12 +93,19 @@ npm run dev   # http://localhost:3000
 ## Deployment (Co-Host auf eigenem Server)
 
 Läuft als Docker-Stack neben anderen Apps. **Auf dem Server** (nicht in dieser
-Session — dort steckt Docker):
+Session — dort steckt Docker). Der Server steht auf `main`:
 
 ```bash
 cd /opt/ladeplanner
-git pull origin claude/new-project-kickoff-69wgyp
+git pull origin main
 docker compose -f docker-compose.cohost.yml up -d --build
+```
+
+Verifizieren, dass das laufende Image den erwarteten Code enthält (Node ist im
+Container vorhanden), Beispiel Standzeit-API:
+
+```bash
+docker exec ladeplanner-app node -e "fetch('http://localhost:3000/api/standzeit?city=Emmerich&connector=ac').then(r=>r.json()).then(d=>console.log(JSON.stringify(d)))"
 ```
 
 Env-Keys kommen aus `/opt/ladeplanner/.env` und werden in
@@ -109,5 +116,9 @@ Env-Keys kommen aus `/opt/ladeplanner/.env` und werden in
 
 ## Git
 
-Feature-Branch: `claude/new-project-kickoff-69wgyp`. Commit-Nachrichten auf
-Deutsch, sachlich. Keine PRs ohne ausdrückliche Bitte.
+**Default- und Produktions-Branch: `main`** — der Server deployt daraus.
+Commit-Nachrichten auf Deutsch, sachlich. Vor jedem Push lokal grün machen
+(lint/typecheck/test/build). Keine PRs ohne ausdrückliche Bitte.
+
+Historie: initial auf `claude/new-project-kickoff-69wgyp` entwickelt; dieser
+Branch wurde nach `main` überführt und ist danach obsolet.
