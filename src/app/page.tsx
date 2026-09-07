@@ -30,35 +30,35 @@ const IconSpa = (
 );
 
 const favorites = [
-  { icon: IconHotel, name: "GINN Hotel", sub: "HAMBURG · ÜBER NACHT", href: "/plan?lat=53.5465&lng=9.9367&name=GINN%20Hotel%20Hamburg&dwell=lang" },
-  { icon: IconHome, name: "Zuhause", sub: "LÜNEBURG", href: "/plan?lat=53.2465&lng=10.4141&name=Zuhause&dwell=lang" },
-  { icon: IconSpa, name: "Kurhaus", sub: "BADEN-BADEN", href: "/plan?lat=48.7606&lng=8.2386&name=Kurhaus%20Baden-Baden&dwell=paar" },
+  { icon: IconHome, name: "Zuhause", sub: "ACKERSTRASSE · DÜSSELDORF", href: `/plan?q=${encodeURIComponent("Ackerstraße 199, 40233 Düsseldorf")}&dwell=lang` },
+  { icon: IconHotel, name: "GINN Hotel", sub: "HAMBURG · ÜBER NACHT", href: `/plan?q=${encodeURIComponent("GINN Hotel Hamburg City")}&dwell=lang` },
+  { icon: IconSpa, name: "Kurhaus", sub: "BADEN-BADEN", href: `/plan?q=${encodeURIComponent("Kurhaus Baden-Baden")}&dwell=paar` },
 ];
 
 export default function Home() {
   return (
-    <main className="wrap" style={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
-      <div className="bloom" style={{ top: -140, right: -90, width: 360, height: 360 }} />
+    <main className="wrap" style={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <div className="bloom" style={{ top: -120, right: -90, width: 420, height: 420, opacity: 0.95 }} />
 
-      <div className="kicker">Ladeplanner</div>
-      <h1 className="display" style={{ fontSize: 52, lineHeight: 1, fontWeight: 200, margin: "18px 0 26px" }}>
+      <div className="kicker" style={{ flex: "none" }}>Ladeplanner</div>
+      <h1 className="display" style={{ fontSize: 46, lineHeight: 1, fontWeight: 200, margin: "12px 0 20px", flex: "none" }}>
         Wohin?
       </h1>
 
-      <form method="get" action="/plan" style={{ display: "flex", flexDirection: "column" }}>
-        <div className="field">
+      <form method="get" action="/plan" style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+        <div className="field" style={{ flex: "none" }}>
           <span style={{ display: "flex" }}>{IconSearch}</span>
           <input name="q" required placeholder="Adresse oder Maps-Link" autoComplete="off" />
         </div>
 
-        <div className="kicker" style={{ margin: "26px 2px 10px" }}>Aufenthalt</div>
-        <div className="seg">
+        <div className="kicker" style={{ margin: "20px 2px 10px", flex: "none" }}>Aufenthalt</div>
+        <div className="seg" style={{ flex: "none" }}>
           <div><input type="radio" id="d-kurz" name="dwell" value="kurz" /><label htmlFor="d-kurz">Kurz</label></div>
           <div><input type="radio" id="d-paar" name="dwell" value="paar" /><label htmlFor="d-paar">2–3 Std</label></div>
           <div><input type="radio" id="d-lang" name="dwell" value="lang" defaultChecked /><label htmlFor="d-lang">Lang</label></div>
         </div>
 
-        <div className="kicker" style={{ margin: "30px 2px 4px" }}>Zuletzt</div>
+        <div className="kicker" style={{ margin: "22px 2px 4px", flex: "none" }}>Ziele</div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {favorites.map((f) => (
             <a key={f.name} className="row" href={f.href}>
@@ -72,12 +72,12 @@ export default function Home() {
           ))}
         </div>
 
-        <div style={{ flex: 1, minHeight: 26 }} />
+        <div style={{ flex: 1, minHeight: 16 }} />
 
-        <button type="submit" className="btn">
+        <button type="submit" className="btn" style={{ flex: "none" }}>
           Laden finden {IconArrow}
         </button>
-        <p className="mono" style={{ color: "var(--faint)", fontSize: 11, lineHeight: 1.55, marginTop: 16, textAlign: "center" }}>
+        <p className="mono" style={{ color: "var(--faint)", fontSize: 10.5, lineHeight: 1.5, margin: "12px 0 0", textAlign: "center", flex: "none" }}>
           Ladepunkte in Gehweite deines Ziels — passend zu Auto und Aufenthalt. Belegung live.
         </p>
       </form>
