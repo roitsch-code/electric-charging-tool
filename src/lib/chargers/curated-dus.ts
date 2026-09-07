@@ -24,8 +24,9 @@ export const DUS_HOME_CHARGERS: Charger[] = [
     lat: 51.230757,
     lng: 6.810093,
     operator: "Stadtwerke Düsseldorf",
-    powerKw: 150, // Schnelllader; exakte Leistung noch zu bestaetigen
+    powerKw: 300, // CCS 300 kW (per Google/SWD bestätigt)
     connector: "dc",
+    connectorType: "CCS",
     address: "Ackerstraße 203, 40235 Düsseldorf",
     source: "curated-dus",
     totalPoints: 2,
