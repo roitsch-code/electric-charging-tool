@@ -1,0 +1,19 @@
+# Caddy-Site-Block fuer Ladeplanner — als EIGENE Datei, damit BrewLog-Deploys
+# die Haupt-Caddyfile ueberschreiben koennen, ohne diesen Block zu killen.
+#
+# Einmalige Einrichtung auf dem Server:
+#   1) Diese Datei an einen Ort legen, den BrewLog NICHT ueberschreibt, z. B.:
+#        sudo mkdir -p /opt/caddy-conf.d
+#        sudo cp deploy/caddy/ladeplaner.caddy /opt/caddy-conf.d/
+#   2) In BrewLogs Haupt-Caddyfile EINMAL die Import-Zeile ergaenzen (ganz oben):
+#        import /opt/caddy-conf.d/*.caddy
+#      und den Ordner in den Caddy-Container mounten (docker-compose von BrewLog):
+#        - /opt/caddy-conf.d:/opt/caddy-conf.d:ro
+#   3) docker exec brewlog-caddy-1 caddy reload --config /etc/caddy/Caddyfile
+#
+# Voraussetzung: Caddy haengt im Edge-Netz:
+#   docker network connect ladeplanner_edge brewlog-caddy-1
+
+ladeplaner.markus-reuter.com {
+	reverse_proxy ladeplanner-app:3000
+}

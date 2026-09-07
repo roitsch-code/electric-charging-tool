@@ -1,16 +1,19 @@
 # Ladeplanner MITBENUTZEN auf einem bestehenden Server (z. B. BrewLog-VPS).
 #
-# Kein eigenes Caddy, keine Ports: Der bereits laufende Caddy (von BrewLog)
-# routet eine Subdomain auf den ladeplanner-app-Container. Dazu haengt sich
-# dieser Stack in dessen Docker-Netz (Standard: brewlog_default).
-# DB liegt extern (Neon) -> kein Postgres-Container.
+# Regeln fuer Co-Hosting (siehe deploy/README.md):
+#  - KEINE generischen Container-Namen (ladeplanner-app, ladeplanner-ofelia).
+#  - KEIN geteiltes "alles"-Netz (brewlog_default). Stattdessen ein DEDIZIERTES
+#    Edge-Netz "ladeplanner_edge" NUR zwischen Caddy und ladeplanner-app.
+#  - Reverse-Proxy zielt auf den EINDEUTIGEN Container-Namen: ladeplanner-app:3000.
+#  - DB liegt extern (Neon) -> kein Postgres-Container.
 #
-# Start:  docker compose -f docker-compose.cohost.yml up -d --build
-#
-# Netzname pruefen/anpassen:  docker network ls | grep brewlog
-#   ggf. in .env:  SHARED_NETWORK=<name>
+# Einmalig (Edge-Netz anlegen + Caddy anschliessen):
+#   docker network create ladeplanner_edge
+#   docker network connect ladeplanner_edge brewlog-caddy-1
+# Danach:
+#   docker compose -f docker-compose.cohost.yml up -d --build
 services:
-  app:
+  ladeplanner-app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -24,24 +27,34 @@ services:
       GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
       NTFY_TOPIC: ${NTFY_TOPIC:-}
       CRON_SECRET: ${CRON_SECRET:-}
+      MOBILITHEK_PFX: ${MOBILITHEK_PFX:-}
+      MOBILITHEK_PFX_PASSWORD: ${MOBILITHEK_PFX_PASSWORD:-}
+      MOBILITHEK_DYNAMIC_SUBSCRIPTION_ID: ${MOBILITHEK_DYNAMIC_SUBSCRIPTION_ID:-}
+      MOBILITHEK_STATIC_SUBSCRIPTION_ID: ${MOBILITHEK_STATIC_SUBSCRIPTION_ID:-}
     networks:
-      - shared
-    # KEINE ports: — der bestehende Caddy proxyt intern ueber den Containernamen.
+      - edge       # nur hierueber erreicht Caddy den Container
+      - internal   # privat, fuer ofelia/kuenftige Dienste
+    # KEINE ports: — Caddy proxyt intern ueber den Container-Namen ueber "edge".
 
-  ofelia:
+  ladeplanner-ofelia:
     image: mcuadros/ofelia:latest
     container_name: ladeplanner-ofelia
     restart: unless-stopped
     depends_on:
-      - app
+      - ladeplanner-app
     command: daemon --config=/etc/ofelia/config.ini
     volumes:
       - ./deploy/ofelia.ini:/etc/ofelia/config.ini:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - shared
+      - internal   # nutzt den Docker-Socket (docker exec), kein Edge noetig
 
 networks:
-  shared:
+  # Dediziertes Edge-Netz: NUR Caddy <-> ladeplanner-app. Extern angelegt,
+  # damit es Deploys ueberlebt und nicht das "alles"-Netz teilt.
+  edge:
     external: true
-    name: ${SHARED_NETWORK:-brewlog_default}
+    name: ladeplanner_edge
+  # Privates Projekt-Netz: app <-> ofelia, von compose verwaltet.
+  internal:
+    driver: bridge
