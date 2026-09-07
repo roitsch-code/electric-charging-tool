@@ -141,9 +141,7 @@ export default function ResultView({
                 <div className="mono" style={{ fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase", color: "#7C7C85", marginTop: 10 }}>
                   {live ? `● Live · ${live}` : "Keine Realtime-Daten"}
                 </div>
-                <div style={{ marginTop: 11 }}>
-                  <NightBadge lat={o.lat} lng={o.lng} />
-                </div>
+                <NightBadge lat={o.lat} lng={o.lng} />
               </button>
             </div>
           );
