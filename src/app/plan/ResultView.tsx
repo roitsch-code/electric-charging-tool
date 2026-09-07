@@ -114,7 +114,7 @@ export default function ResultView({
         ref={scrollerRef}
         onScroll={onScroll}
         className="hide-scrollbar"
-        style={{ flex: "none", display: "flex", overflowX: "auto", scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
+        style={{ flex: "none", display: "flex", overflowX: "auto", scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch", touchAction: "pan-x", overscrollBehaviorX: "contain" }}
       >
         {options.map((o, i) => {
           const st = STATUS[o.status] ?? STATUS.unknown!;

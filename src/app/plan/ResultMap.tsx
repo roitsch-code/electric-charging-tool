@@ -78,8 +78,9 @@ export default function ResultMap({
       mapRef.current = map;
       map.attributionControl.setPrefix(false);
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png", {
-        subdomains: "abcd", maxZoom: 20, attribution: "&copy; OpenStreetMap &copy; CARTO",
+      // Esri „Dark Gray Canvas" (Base, ohne Labels) — dunkel, minimal, keyfrei.
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 16, attribution: "&copy; Esri",
       }).addTo(map);
 
       const ziel = L.divIcon({
