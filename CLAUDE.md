@@ -115,6 +115,13 @@ braucht — was ist los, wohin stattdessen, wie weit zu Fuß, frei, wie schnell:
 > Supermarkt-Parkplatz, 550 Meter zum Ziel, einer von zwei Punkten frei,
 > 11 Kilowatt.
 
+Findet sich **keine** Alternative, endet die Ansage nicht in der Sackgasse,
+sondern sagt, was jetzt zu tun ist — mit passendem Knopf (Autofahrt ans Ziel,
+kein Fußweg):
+
+> Ladeplanner: Gastwerk Hotel Tiefgarage ist belegt. Keine freie Alternative
+> in Gehdistanz. Navigation stattdessen zum Ziel.
+
 Die Alternative wird **namentlich** genannt — ohne Namen weiß man nicht, wohin
 man fährt, und Antippen ist während der Fahrt keine Option (§ 23 Abs. 1a StVO).
 Der Zielname wird nicht wiederholt („550 Meter zum Ziel", nicht „550 Meter vom

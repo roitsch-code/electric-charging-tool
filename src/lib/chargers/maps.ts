@@ -6,12 +6,17 @@ import type { Charger } from "./types";
  * Kein Eigenbau — zwei Links reichen.
  */
 
-/** Autofahrt zum Ladepunkt. */
-export function driveToChargerUrl(charger: Charger): string {
-  const dest = `${charger.lat},${charger.lng}`;
+/** Autofahrt zu beliebigen Koordinaten (z. B. direkt zum Ziel). */
+export function driveToUrl(target: Coordinates): string {
+  const dest = `${target.lat},${target.lng}`;
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
     dest,
   )}&travelmode=driving`;
+}
+
+/** Autofahrt zum Ladepunkt. */
+export function driveToChargerUrl(charger: Charger): string {
+  return driveToUrl(charger);
 }
 
 /** Fussweg vom Ladepunkt zum eigentlichen Ziel. */

@@ -10,7 +10,7 @@ export {
 export { planDestination, SEARCH_RADII_M } from "./plan";
 export { SeedChargerSource, seedSource, SEED_CHARGERS } from "./seed";
 export { spokenForPlan, spokenDiversion, spokenChargerName } from "./spoken";
-export { driveToChargerUrl, walkFromChargerUrl } from "./maps";
+export { driveToChargerUrl, driveToUrl, walkFromChargerUrl } from "./maps";
 export type {
   Charger,
   ChargerStatus,

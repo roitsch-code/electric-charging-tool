@@ -1,5 +1,6 @@
 import {
   driveToChargerUrl,
+  driveToUrl,
   spokenDiversion,
   spokenForPlan,
   walkFromChargerUrl,
@@ -100,6 +101,10 @@ export function buildDiversionMessage(
       label: "Zum Ziel",
       url: walkFromChargerUrl(alternative.charger, destination),
     });
+  } else {
+    // Keine Alternative: der Text sagt "Navigation stattdessen zum Ziel" —
+    // dann muss der Knopf dazu auch da sein (Autofahrt, kein Fussweg).
+    actions.push({ action: "view", label: "Zum Ziel", url: driveToUrl(destination) });
   }
 
   return {

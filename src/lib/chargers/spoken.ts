@@ -150,7 +150,11 @@ export function spokenDiversion(
   input: PlanInput,
 ): string {
   const head = `Ladeplanner: ${spokenChargerName(target.name)} ${targetProblem(target.status)}.`;
-  if (!alternative) return `${head} Keine freie Alternative in Gehdistanz.`;
+  // Ohne Alternative endet die Ansage nicht in der Sackgasse, sondern sagt,
+  // was jetzt zu tun ist: einfach ans Ziel fahren (Knopf dazu in message.ts).
+  if (!alternative) {
+    return `${head} Keine freie Alternative in Gehdistanz. Navigation stattdessen zum Ziel.`;
+  }
 
   const parts = [
     `Ausweichen auf ${spokenChargerName(alternative.charger.name)}`,

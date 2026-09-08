@@ -269,7 +269,7 @@ describe("buildDiversionMessage — der vorgelesene Text", () => {
     expect(msg.message).toContain("für den kurzen Halt zu wenig");
   });
 
-  it("ohne Alternative: ehrliche Ansage statt erfundener Empfehlung", () => {
+  it("ohne Alternative: ehrliche Ansage plus was jetzt zu tun ist", () => {
     const msg = buildDiversionMessage(
       "t",
       { name: "Marktplatz, Emmerich", status: "occupied" },
@@ -277,7 +277,14 @@ describe("buildDiversionMessage — der vorgelesene Text", () => {
       INPUT,
       GASTWERK,
     );
-    expect(msg.message).toBe("Ladeplanner: Marktplatz ist belegt. Keine freie Alternative in Gehdistanz.");
-    expect(msg.actions).toHaveLength(0);
+    expect(msg.message).toBe(
+      "Ladeplanner: Marktplatz ist belegt. Keine freie Alternative in Gehdistanz. " +
+        "Navigation stattdessen zum Ziel.",
+    );
+    // Der Knopf muss zu der Ansage passen: Autofahrt ans Ziel, kein Fussweg.
+    expect(msg.actions).toHaveLength(1);
+    expect(msg.actions![0]!.label).toBe("Zum Ziel");
+    expect(msg.actions![0]!.url).toContain("travelmode=driving");
+    expect(msg.actions![0]!.url).toContain(encodeURIComponent(`${GASTWERK.lat},${GASTWERK.lng}`));
   });
 });
