@@ -1,22 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="field" x1="6%" y1="98%" x2="94%" y2="2%">
-      <stop offset="0%"   stop-color="#FF6F4C"/>
-      <stop offset="52%"  stop-color="#FF7E8F"/>
-      <stop offset="100%" stop-color="#FF86B9"/>
+    <linearGradient id="g" x1="8%" y1="80%" x2="92%" y2="20%">
+      <stop offset="0%" stop-color="#FF86B9"/><stop offset="100%" stop-color="#FF7E5A"/>
     </linearGradient>
-    <radialGradient id="core" cx="50%" cy="50%" r="66%">
-      <stop offset="0%"   stop-color="#FFE7DD" stop-opacity="0.82"/>
-      <stop offset="42%"  stop-color="#FFCEC4" stop-opacity="0.30"/>
-      <stop offset="100%" stop-color="#FFCEC4" stop-opacity="0"/>
+    <radialGradient id="c" cx="50%" cy="48%" r="60%">
+      <stop offset="0%" stop-color="#FFD9E4" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#FFC7C0" stop-opacity="0"/>
     </radialGradient>
-    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="9"/>
-    </filter>
   </defs>
-  <!-- Hintergrund minimal ueberzeichnet (-8..520), damit garantiert kein Rand bleibt -->
-  <rect x="-8" y="-8" width="528" height="528" fill="url(#field)"/>
-  <rect x="-8" y="-8" width="528" height="528" fill="url(#core)"/>
-  <path d="M298 80 L190 264 L258 264 L214 432 L322 248 L254 248 Z" fill="#3a0f1a" opacity="0.32" filter="url(#soft)" transform="translate(0,5)"/>
-  <path d="M298 80 L190 264 L258 264 L214 432 L322 248 L254 248 Z" fill="#120a0d" stroke="#120a0d" stroke-width="10" stroke-linejoin="round"/>
+  <rect x="-8" y="-8" width="528" height="528" fill="url(#g)"/>
+  <rect x="-8" y="-8" width="528" height="528" fill="url(#c)"/>
+  <path d="M303 59 L182 265 L258 265 L209 453 L330 247 L254 247 Z" fill="#160a0e" stroke="#160a0e" stroke-width="10" stroke-linejoin="round"/>
 </svg>
