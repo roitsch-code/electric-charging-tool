@@ -63,6 +63,10 @@ stehen?***
 | Standzeit-Recherche (Agent) | `src/lib/rules/standzeit-research.ts` |
 | Standzeit-Persistenz | `src/lib/rules/standzeit-db.ts` |
 | Standzeit-API | `src/app/api/standzeit/route.ts` |
+| Notification-Pusher (Regeln) | `src/lib/notify/watch.ts` |
+| Notification-Pusher (Durchlauf) | `src/lib/notify/watch-tick.ts`, `watch-db.ts` |
+| Push-Texte / Alternative | `src/lib/notify/message.ts` |
+| Cron (Ankunft + Überwachung) | `src/app/api/cron/dispatch/route.ts`, `cron/watch/route.ts` |
 | Startseite + Favoriten | `src/app/page.tsx`, `src/app/Favorites.tsx` |
 | Ergebnis-Seite (Karten, Swipe, Standzeit-Knopf) | `src/app/plan/ResultView.tsx`, `ResultMap.tsx` |
 | Viewport/No-Scroll-CSS | `src/app/globals.css` |
@@ -78,6 +82,35 @@ stehen?***
   AC-Punkt (× 0,2) unter jeden nutzbaren DC-Punkt gedrückt, bleibt aber
   sichtbar (AC-only-Fall). So schlägt Nähe nicht die Brauchbarkeit.
 - Fahrzeug-Deckelung: nutzbare Leistung bei 135 kW DC / 11 kW AC gekappt.
+
+## Notification-Pusher (`notify/watch.ts`)
+
+Ab **15 Minuten vor Ankunft** prüft der Minuten-Cron, ob die **angefahrene**
+Säule noch frei ist. Die Säule ist die im Ergebnis-Karussell gewählte; der
+„Losfahren"-Knopf schickt sie als `target` an `POST /api/trips`, das Fenster
+liegt in `trip_watch` (ETA − 15 min bis ETA + 10 min Gnadenfrist).
+
+Entscheidungsregeln (`decideWatch`, vollständig getestet in
+`tests/notify/watch.test.ts`):
+
+| Zustandswechsel | Push? |
+|---|---|
+| frei → **0 frei** / belegt / defekt | **ja**, mit Alternative |
+| 3/4 frei → 2/4 frei | nein (ist ja noch frei) |
+| **0 frei**, auch ohne bekannten Vorzustand | **ja** (0 löst immer aus) |
+| Zustand unbekannt (keine Live-Daten) | nein — nichts halluzinieren |
+| Säule nicht mehr in der Antwort | nein — Datenlücke ≠ belegt |
+| bereits einmal umgeleitet | nein (kein Push-Gewitter im Minutentakt) |
+
+„Belegt" = **null freie Punkte** (`freePoints`, sonst der Status). Nach dem
+Ausweich-Push ist die Überwachung beendet, der Trip steht auf `diverted`.
+Fahrten mit überwachter Säule bekommen **keinen** zusätzlichen Ankunfts-Push —
+sonst käme zweimal etwas, obwohl die Säule schon gewählt ist.
+
+Der Durchlauf hängt im bestehenden `/api/cron/dispatch` (Minutentakt, ofelia
+bleibt unverändert); `/api/cron/watch` löst ihn einzeln aus, zum Prüfen. Die
+Tabelle `trip_watch` legt die App selbst an (`watch-db.ts`, gleiches Muster wie
+`city_rules`) — **kein** Migrationslauf beim Auto-Deploy nötig.
 
 ## Favoriten (`Favorites.tsx`)
 

@@ -206,8 +206,14 @@ Realtime zeigt die App „Status unbekannt".
   5/10/15 min), `message.ts` (baut Push aus einem Plan).
 - **Cron** (`vercel.json` + `src/app/api/cron/`): `/api/cron/poll` schreibt die
   Verfügbarkeit in die DB (nur zu bekannten Ladepunkten, §5.1);
-  `/api/cron/dispatch` verschickt fällige Pushes (`notify_at` erreicht).
+  `/api/cron/dispatch` verschickt fällige Pushes (`notify_at` erreicht) und
+  fährt im selben Lauf den Notification-Pusher.
   Optionaler Schutz über `CRON_SECRET`.
+- **Notification-Pusher** (`src/lib/notify/watch.ts`, `watch-tick.ts`): ab
+  **15 min vor Ankunft** wird die angefahrene Säule im Minutentakt geprüft.
+  Fällt sie auf **null freie Punkte**, kommt ein Push mit der besten
+  Alternative; ein Rückgang von 3/4 auf 2/4 löst nichts aus, ein unbekannter
+  Zustand ebenfalls nicht. Regeln und Tabelle: siehe `CLAUDE.md`.
 
 ### Aktivieren (nach dem DB-Setup oben)
 
@@ -249,6 +255,20 @@ POST /api/destinations
 GET /api/destinations/:id
   → 200 { id, lat, lng, name, method, dwellMinutes, returnTripKm,
           status, recommendations }
+
+POST /api/trips
+  { "origin": { "lat": .., "lng": .. },          Startpunkt (Geolocation)
+    "lat": .., "lng": .., "name": "…",           Ziel (auch u | to | q)
+    "dwell": "nacht", "return": 0,
+    "target": { "evseId": "…", "name": "…",      angefahrene Säule (optional)
+                "lat": .., "lng": ..,            → schaltet die Überwachung an
+                "status": "available", "free": 3, "total": 4 } }
+  → 200 { tripId, eta, notifyAt, leadMinutes, distanceKm, etaSource,
+          destination, watch: { from, until, leadMinutes } | null }
+
+GET  /api/cron/watch        Notification-Pusher einzeln auslösen
+  → 200 { ok, checked, pushed[], finished[], at }
+  (derselbe Durchlauf läuft im Minutentakt in /api/cron/dispatch mit)
 
 GET  /api/standzeit?city=<Stadt>&connector=ac|dc
   → 200 { found, origin: "static"|"db", label, verdict, source?, note? }

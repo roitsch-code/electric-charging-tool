@@ -1,4 +1,4 @@
-import type { PlanInput, PlanResult, RankedCharger } from "./types";
+import type { Charger, PlanInput, PlanResult, RankedCharger } from "./types";
 
 /**
  * Sprechtext fuer die vorgelesene Push-Mitteilung (Konzept §6.6).
@@ -81,6 +81,40 @@ function assessment(top: RankedCharger, input: PlanInput): string {
     return "Reicht über Nacht.";
   }
   return "Reicht für ein paar Stunden.";
+}
+
+/** Belegungs-Satz fuer EINEN Ladepunkt (nicht die ganze Top-Liste). */
+function chargerAvailabilityPhrase(c: Charger): string {
+  if (c.status === "outoforder") return "außer Betrieb";
+  if (!c.status || c.status === "unknown") return "Belegung unbekannt";
+  if (typeof c.freePoints === "number" && typeof c.totalPoints === "number" && c.totalPoints > 0) {
+    if (c.totalPoints === 1) return c.freePoints > 0 ? "frei" : "belegt";
+    return `${spellCount(c.freePoints)} von ${spellCount(c.totalPoints)} Punkten frei`;
+  }
+  return c.status === "available" ? "frei" : "belegt";
+}
+
+/**
+ * Sprechsatz fuer einen einzelnen gerankten Ladepunkt, OHNE das
+ * "Ladeplanner:"-Praefix — fuer den Ausweich-Push ("Alternative: …").
+ */
+export function spokenForCharger(
+  top: RankedCharger,
+  destination: { name?: string },
+  input: PlanInput,
+): string {
+  const destName = shortName(destination.name);
+  const dist = distancePhrase(top, destName);
+  const avail = chargerAvailabilityPhrase(top.charger);
+  const power = `${Math.round(top.usablePowerKw)} Kilowatt`;
+  return `${dist}, ${avail}, ${power}. ${assessment(top, input)}`;
+}
+
+/** Kurzer, sprechbarer Name einer Saeule (bis zum ersten Komma). */
+export function spokenChargerName(name: string | undefined): string {
+  if (!name) return "Die Ladesäule";
+  const head = name.split(",")[0]!.trim();
+  return head || "Die Ladesäule";
 }
 
 /**
