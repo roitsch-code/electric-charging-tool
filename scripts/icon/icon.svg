@@ -1,35 +1,22 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <radialGradient id="bg" cx="58%" cy="30%" r="90%">
-      <stop offset="0%"   stop-color="#1c1722"/>
-      <stop offset="50%"  stop-color="#0c0b0f"/>
-      <stop offset="100%" stop-color="#070709"/>
-    </radialGradient>
-    <!-- dreamy Pink/Coral Bloom oben rechts, groß & weich (wie .bloom der App) -->
-    <radialGradient id="bloom" cx="72%" cy="20%" r="66%">
-      <stop offset="0%"   stop-color="#ff8ec2" stop-opacity="0.60"/>
-      <stop offset="34%"  stop-color="#ff7fa8" stop-opacity="0.26"/>
-      <stop offset="62%"  stop-color="#ff7e5a" stop-opacity="0.10"/>
-      <stop offset="100%" stop-color="#ff7e5a" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="bolt" x1="30%" y1="4%" x2="70%" y2="96%">
-      <stop offset="0%"   stop-color="#ffa9cb"/>
-      <stop offset="42%"  stop-color="#ff86b9"/>
-      <stop offset="100%" stop-color="#ff6f4c"/>
+    <linearGradient id="field" x1="6%" y1="98%" x2="94%" y2="2%">
+      <stop offset="0%"   stop-color="#FF6F4C"/>
+      <stop offset="52%"  stop-color="#FF7E8F"/>
+      <stop offset="100%" stop-color="#FF86B9"/>
     </linearGradient>
-    <filter id="glow" x="-70%" y="-70%" width="240%" height="240%">
-      <feGaussianBlur stdDeviation="20"/>
+    <radialGradient id="core" cx="50%" cy="50%" r="66%">
+      <stop offset="0%"   stop-color="#FFE7DD" stop-opacity="0.82"/>
+      <stop offset="42%"  stop-color="#FFCEC4" stop-opacity="0.30"/>
+      <stop offset="100%" stop-color="#FFCEC4" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="9"/>
     </filter>
   </defs>
-
-  <rect width="512" height="512" fill="url(#bg)"/>
-  <rect width="512" height="512" fill="url(#bloom)"/>
-
-  <!-- warmer Halo hinter dem Blitz -->
-  <path d="M296 78 L176 286 L250 286 L216 434 L336 232 L262 232 Z"
-        fill="#ff7e6a" opacity="0.60" filter="url(#glow)"/>
-  <!-- Blitz -->
-  <path d="M296 78 L176 286 L250 286 L216 434 L336 232 L262 232 Z"
-        fill="url(#bolt)" stroke="#ffe0ec" stroke-width="1.6" stroke-opacity="0.30"
-        stroke-linejoin="round"/>
+  <!-- Hintergrund minimal ueberzeichnet (-8..520), damit garantiert kein Rand bleibt -->
+  <rect x="-8" y="-8" width="528" height="528" fill="url(#field)"/>
+  <rect x="-8" y="-8" width="528" height="528" fill="url(#core)"/>
+  <path d="M298 80 L190 264 L258 264 L214 432 L322 248 L254 248 Z" fill="#3a0f1a" opacity="0.32" filter="url(#soft)" transform="translate(0,5)"/>
+  <path d="M298 80 L190 264 L258 264 L214 432 L322 248 L254 248 Z" fill="#120a0d" stroke="#120a0d" stroke-width="10" stroke-linejoin="round"/>
 </svg>

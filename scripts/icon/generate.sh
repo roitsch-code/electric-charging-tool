@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # App-Icon aus icon.svg neu erzeugen.
 #
+# Design: vollflächiger Marken-Verlauf (Coral -> Pink, Ecke zu Ecke) mit hellem
+# Glow-Kern in der Mitte, dahinter ein zentrierter dunkler Blitz. Kein dunkler
+# Rand, keine Vignette.
+#
 # Warum dieser Weg: Headless-Chromium rendert Fenster < ~256 px falsch
-# (Capture-Region stimmt nicht). Darum EIN scharfes 1024er-Master rendern und
-# mit sharp (Lanczos) auf die Zielgrößen herunterrechnen — beste Qualität.
+# (Capture-Region stimmt nicht), und width/height-Attribute der SVG per sed zu
+# ersetzen ist fragil (killt schon mal Verläufe). Darum: SVG UNVERÄNDERT
+# einbetten, Größe rein per CSS setzen (viewBox skaliert den Inhalt inkl. Blur),
+# EIN scharfes 1024er-Master rendern und mit sharp (Lanczos) herunterrechnen.
 #
 # Erzeugt:
 #   src/app/apple-icon.png   180x180  (iPhone-Homescreen, Apple-Touch-Icon)
@@ -18,21 +24,20 @@ cd "$(dirname "$0")"
 ROOT="$(cd ../.. && pwd)"
 CHROME="${CHROME:-/opt/pw-browsers/chromium}"
 
-# 1) 1024er-Master rendern (SVG mit fester Pixelgröße, viewBox skaliert den Inhalt)
-cat > wrap.html <<HTML
+# 1) 1024er-Master rendern (SVG unverändert, Größe per CSS)
+cat > _m.html <<HTML
 <!doctype html><html><head><meta charset="utf-8">
-<style>html,body{margin:0;padding:0;background:#070709}svg{display:block}</style>
+<style>html,body{margin:0;padding:0;background:#FF7E5A}svg{display:block;width:1024px;height:1024px}</style>
 </head><body>
-$(sed '1s#<svg #<svg width="1024" height="1024" #' icon.svg)
+$(cat icon.svg)
 </body></html>
 HTML
 "$CHROME" --headless=new --no-sandbox --hide-scrollbars \
   --force-device-scale-factor=1 --window-size=1024,1024 \
-  --default-background-color=00000000 \
-  --screenshot="icon-1024.png" "file://$PWD/wrap.html"
-rm -f wrap.html
+  --screenshot="icon-1024.png" "file://$PWD/_m.html"
+rm -f _m.html
 
-# 2) Master herunterrechnen
+# 2) Master herunterrechnen (flatten: falls am Rand transparent, mit Coral füllen)
 node -e "
 const sharp = require('sharp');
 const src = 'icon-1024.png';
@@ -44,6 +49,7 @@ const jobs = [
 (async () => {
   for (const [out, size] of jobs) {
     await sharp(src).resize(size, size, { kernel: 'lanczos3' })
+      .flatten({ background: '#FF7E5A' })
       .png({ compressionLevel: 9 }).toFile(out);
     console.log('ok', out, size);
   }
