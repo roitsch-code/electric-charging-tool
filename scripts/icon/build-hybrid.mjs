@@ -1,5 +1,5 @@
 // Hybrid-App-Icon bauen: FLUX-Textur (organische Wolken) über exaktem
-// Marken-Verlauf (Pink #FF86B9 -> Coral #FF7E5A), abgedunkelt, mit zentriertem
+// Marken-Verlauf (Pink #FF86B9 -> Coral #FF7E5A), knallig, mit zentriertem
 // Vektor-Blitz. Reproduzierbar, rein per sharp (kein Chromium).
 //
 // Warum so: FLUX trifft keine exakten Markenfarben (driftet in Orange/Violett/
@@ -20,7 +20,9 @@ import sharp from "sharp";
 import { writeFileSync } from "node:fs";
 
 const W = 1024;
-const DARK = 0.74; // Helligkeit (kleiner = dunkler)
+const BRIGHTNESS = 0.95; // größer = heller/knalliger
+const SATURATION = 1.26; // größer = kräftigere Farben
+const TEXTURE = { blur: 55, gain: 0.42, bias: 74 }; // dezente FLUX-Wolken (wenig Entsättigung)
 
 // Exakter Marken-Verlauf (110deg Pink->Coral) + heller Zentralglow (Backlight).
 const baseSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
@@ -29,21 +31,21 @@ const baseSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
       <stop offset="0%" stop-color="#FF86B9"/><stop offset="100%" stop-color="#FF7E5A"/>
     </linearGradient>
     <radialGradient id="c" cx="50%" cy="48%" r="60%">
-      <stop offset="0%" stop-color="#FFD9E4" stop-opacity="0.7"/>
-      <stop offset="55%" stop-color="#FFC7C0" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#FFC7C0" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#FFE1EC" stop-opacity="0.6"/>
+      <stop offset="55%" stop-color="#FFD0DA" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#FFD0DA" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="512" height="512" fill="url(#g)"/>
   <rect width="512" height="512" fill="url(#c)"/>
 </svg>`;
 
-// Zentrierter Blitz (Bounding-Box exakt mittig, x1.12 skaliert) + heller Halo,
-// damit der dunkle Blitz auf sattem Grund abhebt.
-const BOLT = "M303 59 L182 265 L258 265 L209 453 L330 247 L254 247 Z";
+// Zentrierter Blitz (Bounding-Box exakt mittig, kompakte Höhe ~334) + heller
+// Halo, damit der dunkle Blitz auf sattem Grund abhebt.
+const BOLT = "M296 89 L193 264 L258 264 L216 423 L319 248 L254 248 Z";
 const boltSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs><filter id="h" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="24"/></filter></defs>
-  <path d="${BOLT}" fill="#FFF4EE" opacity="0.55" filter="url(#h)"/>
+  <defs><filter id="h" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="22"/></filter></defs>
+  <path d="${BOLT}" fill="#FFF4EE" opacity="0.5" filter="url(#h)"/>
   <path d="${BOLT}" fill="#160a0e" stroke="#160a0e" stroke-width="10" stroke-linejoin="round"/>
 </svg>`;
 
@@ -54,8 +56,8 @@ const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512
       <stop offset="0%" stop-color="#FF86B9"/><stop offset="100%" stop-color="#FF7E5A"/>
     </linearGradient>
     <radialGradient id="c" cx="50%" cy="48%" r="60%">
-      <stop offset="0%" stop-color="#FFD9E4" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#FFC7C0" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#FFE1EC" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#FFD0DA" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect x="-8" y="-8" width="528" height="528" fill="url(#g)"/>
@@ -65,13 +67,15 @@ const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512
 
 const base = await sharp(Buffer.from(baseSvg)).resize(W, W).png().toBuffer();
 const bolt = await sharp(Buffer.from(boltSvg)).resize(W, W).png().toBuffer();
-// FLUX-Luminanz: entsättigen, stark blurren (nur weiche Wolken), Kontrast stauchen.
+// FLUX-Luminanz: entsättigen, stark blurren, Kontrast gegen Mittelgrau stauchen
+// (nur weiche Wolken, kaum Entsättigung des Verlaufs).
 const fluxGray = await sharp("scripts/icon/flux-bg.png")
-  .resize(W, W).greyscale().blur(55).linear(0.6, 51).toColourspace("srgb").toBuffer();
+  .resize(W, W).greyscale().blur(TEXTURE.blur).linear(TEXTURE.gain, TEXTURE.bias)
+  .toColourspace("srgb").toBuffer();
 
 const graded = await sharp(base).composite([{ input: fluxGray, blend: "soft-light" }]).toBuffer();
-const dark = await sharp(graded).modulate({ brightness: DARK, saturation: 1.02 }).toBuffer();
-const master = await sharp(dark).composite([{ input: bolt }]).png().toBuffer();
+const punchy = await sharp(graded).modulate({ brightness: BRIGHTNESS, saturation: SATURATION }).toBuffer();
+const master = await sharp(punchy).composite([{ input: bolt }]).png().toBuffer();
 
 writeFileSync("scripts/icon/icon-master.png", master);
 for (const [out, size] of [

@@ -4,11 +4,11 @@
       <stop offset="0%" stop-color="#FF86B9"/><stop offset="100%" stop-color="#FF7E5A"/>
     </linearGradient>
     <radialGradient id="c" cx="50%" cy="48%" r="60%">
-      <stop offset="0%" stop-color="#FFD9E4" stop-opacity="0.6"/>
-      <stop offset="100%" stop-color="#FFC7C0" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#FFE1EC" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#FFD0DA" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect x="-8" y="-8" width="528" height="528" fill="url(#g)"/>
   <rect x="-8" y="-8" width="528" height="528" fill="url(#c)"/>
-  <path d="M303 59 L182 265 L258 265 L209 453 L330 247 L254 247 Z" fill="#160a0e" stroke="#160a0e" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M296 89 L193 264 L258 264 L216 423 L319 248 L254 248 Z" fill="#160a0e" stroke="#160a0e" stroke-width="10" stroke-linejoin="round"/>
 </svg>
