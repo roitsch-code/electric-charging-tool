@@ -46,7 +46,10 @@ stehen?***
      gespeichert in `city_rules` (`standzeit-db.ts`). Details:
      [`docs/standzeit.md`](docs/standzeit.md).
 - **Karte:** Leaflet + Esri „Dark Gray Canvas"-Tiles (keyless; CARTO braucht
-  inzwischen einen Key → Wasserzeichen). Tile-URL nutzt `{z}/{y}/{x}`.
+  inzwischen einen Key → Wasserzeichen). Tile-URL nutzt `{z}/{y}/{x}`. **Zoombar**
+  (Pinch/Mausrad/Doppelklick + dezente +/−-Buttons unten links); die
+  Pin-Kollisions-Versätze hängen vom Zoom ab und werden bei `zoomend` neu
+  berechnet (`ResultMap.tsx`), sonst driften die Pins.
 
 ## Wichtige Dateien
 
@@ -63,6 +66,9 @@ stehen?***
 | Startseite + Favoriten | `src/app/page.tsx`, `src/app/Favorites.tsx` |
 | Ergebnis-Seite (Karten, Swipe, Standzeit-Knopf) | `src/app/plan/ResultView.tsx`, `ResultMap.tsx` |
 | Viewport/No-Scroll-CSS | `src/app/globals.css` |
+| App-Icon bauen (Hybrid-Pipeline) | `scripts/icon/build-hybrid.mjs`, `flux.mjs`, `flux-bg.png` |
+| Icon/Manifest (Next-Konvention) | `src/app/apple-icon.png`, `src/app/icon.svg`, `src/app/manifest.ts` |
+| Auto-Deploy | `deploy.sh`, `.github/workflows/deploy.yml` |
 
 ## Ranking (`rank.ts`)
 
@@ -80,6 +86,30 @@ Zuhause (Ackerstraße 199) · Schwiegereltern (Ingenkampstraße 61, Emmerich) ·
 ausgeschlossen). Klick übernimmt die oben gewählte Aufenthalt-Stufe — **kein**
 fixes „lang".
 
+## App-Icon / Homescreen-Web-App
+
+Das Icon (dunkler Blitz auf Pink→Coral) ist ein **Hybrid**: eine FLUX-Textur
+liefert **nur** die organische Helligkeits-Struktur (entsättigt, geblurrt, als
+Soft-Light-Ebene), die Farben kommen exakt aus dem Marken-Verlauf `--grad`
+(`#FF86B9` → `#FF7E5A`). So bleibt die Palette markentreu — **kein
+Orange/Violett/Blau** (FLUX driftet sonst dorthin).
+
+- **Bauen/ändern:** `node scripts/icon/build-hybrid.mjs` (rein `sharp`, kein
+  Chromium). Stellschrauben oben in der Datei: `BRIGHTNESS`, `SATURATION`,
+  `TEXTURE`, Blitz-Pfad. Erzeugt Master + alle Größen + Favicon.
+- **Neue FLUX-Textur:** `BFL_API_KEY=… node scripts/icon/flux.mjs "<prompt>"
+  scripts/icon/flux-bg.png`. `BFL_API_KEY` (Black Forest Labs) ist ein **Build-
+  Key, nicht zur Laufzeit** — gehört NICHT in die Compose-`environment:`. Der
+  approvte Hintergrund `scripts/icon/flux-bg.png` ist eingecheckt (FLUX ist nicht
+  deterministisch → sonst nicht reproduzierbar).
+- **Verdrahtung** über Next-Datei-Konventionen (keine handgepflegten
+  `<head>`-Links): `src/app/apple-icon.png` (180, Homescreen), `src/app/icon.svg`
+  (Favicon), `src/app/manifest.ts` (Standalone), `appleWebApp`-Metadaten in
+  `src/app/layout.tsx`.
+- **Homescreen nur via Safari** — Firefox iOS legt kein echtes Web-App-Icon an,
+  nur ein Lesezeichen. iOS cached Icons: nach Änderung altes Homescreen-Icon
+  löschen und neu hinzufügen, sonst bleibt das alte.
+
 ## Entwicklung
 
 Node ist hier direkt verfügbar (kein Docker in dieser Session nötig):
@@ -92,13 +122,29 @@ npm run dev   # http://localhost:3000
 
 ## Deployment (Co-Host auf eigenem Server)
 
-Läuft als Docker-Stack neben anderen Apps. **Auf dem Server** (nicht in dieser
-Session — dort steckt Docker). Der Server steht auf `main`:
+Läuft als Docker-Stack neben anderen Apps auf dem eigenen Server (dort steckt
+Docker — **nicht** in dieser Session). Der Server steht auf `main`.
+
+**Auto-Deploy ist der Normalfall — nichts tun.** Ein Cron auf dem Server prüft
+alle ~3 Min, ob `origin/main` neue Commits hat, und baut nur bei Änderung neu
+(`git pull --ff-only` + `docker compose … up -d --build`). Ein Merge nach `main`
+geht also von selbst live; **kein manueller Deploy nötig.** Der Cron-Eintrag
+(einmalig gesetzt, idempotent per Marker-Kommentar):
+
+```cron
+*/3 * * * * cd /opt/ladeplanner && git fetch origin main -q && [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ] && git pull --ff-only origin main && docker compose -f docker-compose.cohost.yml up -d --build >/tmp/ladeplanner-deploy.log 2>&1 # ladeplanner-autodeploy
+```
+
+Zusätzlich liegt ein GitHub-Actions-Workflow `.github/workflows/deploy.yml`
+bereit (SSH-Deploy bei Push auf `main`, ruft `deploy.sh`). Er ist **inaktiv**,
+solange die Secrets `DEPLOY_HOST`/`DEPLOY_USER`/`DEPLOY_SSH_KEY` fehlen, und
+überspringt sich dann geräuschlos. Aktiver Weg ist der Cron oben.
+
+**Manuell deployen** (nur falls nötig, auf dem Server):
 
 ```bash
-cd /opt/ladeplanner
-git pull origin main
-docker compose -f docker-compose.cohost.yml up -d --build
+cd /opt/ladeplanner && git pull origin main && docker compose -f docker-compose.cohost.yml up -d --build
+# oder kurz:  /opt/ladeplanner/deploy.sh
 ```
 
 Verifizieren, dass das laufende Image den erwarteten Code enthält (Node ist im
