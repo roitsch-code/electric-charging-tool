@@ -242,6 +242,9 @@ GET /api/plan?lat=..&lng=..&name=..&dwell=..&return=..
   dwell: Minuten ODER Label (kurz | paar | nacht | laenger)
   → 200 { destination, demandClass, usedRadiusM, expanded,
           spokenRecommendation, spokenAlternative, top[] }
+    top[]: rank, evseId, name, lat, lng, operator, connector, powerKw,
+           usablePowerKw, atDestination, walkingM, airlineM, status,
+           freePoints, totalPoints, statusUpdatedAt, score, driveUrl, walkUrl
   → 422 { needsManualInput, placeNameHint, reason }
   Beispiel: /api/plan?lat=53.5510&lng=9.9215&dwell=nacht
 
