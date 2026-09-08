@@ -193,17 +193,26 @@ describe("pickAlternative", () => {
   });
 });
 
-describe("buildDiversionMessage", () => {
-  it("sagt, was los ist, nennt die Alternative und haengt Deeplinks an", async () => {
+describe("buildDiversionMessage — der vorgelesene Text", () => {
+  it("sagt, was los ist, NENNT die Alternative und haengt Deeplinks an", async () => {
     const plan = await planDestination(GASTWERK, INPUT);
     const target = plan.top[0]!.charger;
-    const alt = pickAlternative(plan, target);
-    const msg = buildDiversionMessage("mein-topic", { name: target.name }, alt, INPUT, GASTWERK);
+    const alt = pickAlternative(plan, target)!;
+    const msg = buildDiversionMessage(
+      "mein-topic",
+      { name: target.name, status: "occupied" },
+      alt,
+      INPUT,
+      GASTWERK,
+    );
 
     expect(msg.title).toBe("Ladeplanner");
     expect(/^[\x00-\x7F]*$/.test(msg.title)).toBe(true); // ntfy-Header: ASCII
-    expect(msg.message).toContain("ist jetzt belegt");
-    expect(msg.message).toContain("Alternative:");
+    expect(msg.message).toContain("ist belegt");
+    // Ohne Namen weiss man nicht, wohin man faehrt — Tippen geht waehrend der
+    // Fahrt nicht (§ 23 Abs. 1a StVO).
+    expect(msg.message).toContain(`Ausweichen auf ${alt.charger.name}`);
+    expect(msg.message).toContain("zum Ziel");
     expect(msg.message).toContain("Kilowatt");
     expect(msg.priority).toBe(5);
     expect(msg.actions).toHaveLength(2);
@@ -211,10 +220,64 @@ describe("buildDiversionMessage", () => {
     expect(msg.actions![1]!.url).toContain("travelmode=walking");
   });
 
+  it("bleibt kurz genug zum Vorlesen (hoechstens 30 Woerter)", async () => {
+    const plan = await planDestination(GASTWERK, INPUT);
+    const alt = pickAlternative(plan, plan.top[0]!.charger);
+    const msg = buildDiversionMessage(
+      "t",
+      { name: plan.top[0]!.charger.name, status: "occupied" },
+      alt,
+      INPUT,
+      GASTWERK,
+    );
+    expect(msg.message.split(/\s+/).length).toBeLessThanOrEqual(30);
+  });
+
+  it("defekte Saeule heisst 'außer Betrieb', nicht 'belegt'", async () => {
+    const plan = await planDestination(GASTWERK, INPUT);
+    const alt = pickAlternative(plan, plan.top[0]!.charger);
+    const msg = buildDiversionMessage(
+      "t",
+      { name: "Marktplatz", status: "outoforder" },
+      alt,
+      INPUT,
+      GASTWERK,
+    );
+    expect(msg.message).toContain("Marktplatz ist außer Betrieb");
+    expect(msg.message).not.toContain("belegt");
+  });
+
+  it("kein Fuellsatz, wenn die Alternative zum Bedarf passt", async () => {
+    const plan = await planDestination(GASTWERK, INPUT);
+    const alt = pickAlternative(plan, plan.top[0]!.charger);
+    const msg = buildDiversionMessage(
+      "t",
+      { name: "Marktplatz", status: "occupied" },
+      alt,
+      INPUT,
+      GASTWERK,
+    );
+    expect(msg.message).not.toContain("Reicht über Nacht");
+  });
+
+  it("warnt, wenn nur noch Wechselstrom uebrig ist und DC gebraucht wird", async () => {
+    const input = { dwellMinutes: 30, returnTripKm: 300 };
+    const plan = await planDestination(GASTWERK, input);
+    const acOnly = plan.top.find((r) => r.charger.connector === "ac")!;
+    const msg = buildDiversionMessage("t", { name: "Marktplatz", status: "occupied" }, acOnly, input, GASTWERK);
+    expect(msg.message).toContain("Nur Wechselstrom");
+    expect(msg.message).toContain("für den kurzen Halt zu wenig");
+  });
+
   it("ohne Alternative: ehrliche Ansage statt erfundener Empfehlung", () => {
-    const msg = buildDiversionMessage("t", { name: "Marktplatz, Emmerich" }, null, INPUT, GASTWERK);
-    expect(msg.message).toContain("Marktplatz ist jetzt belegt");
-    expect(msg.message).toContain("Keine freie Alternative");
+    const msg = buildDiversionMessage(
+      "t",
+      { name: "Marktplatz, Emmerich", status: "occupied" },
+      null,
+      INPUT,
+      GASTWERK,
+    );
+    expect(msg.message).toBe("Ladeplanner: Marktplatz ist belegt. Keine freie Alternative in Gehdistanz.");
     expect(msg.actions).toHaveLength(0);
   });
 });

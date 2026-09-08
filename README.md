@@ -211,9 +211,12 @@ Realtime zeigt die App „Status unbekannt".
   Optionaler Schutz über `CRON_SECRET`.
 - **Notification-Pusher** (`src/lib/notify/watch.ts`, `watch-tick.ts`): ab
   **15 min vor Ankunft** wird die angefahrene Säule im Minutentakt geprüft.
-  Fällt sie auf **null freie Punkte**, kommt ein Push mit der besten
-  Alternative; ein Rückgang von 3/4 auf 2/4 löst nichts aus, ein unbekannter
-  Zustand ebenfalls nicht. Regeln und Tabelle: siehe `CLAUDE.md`.
+  Fällt sie auf **null freie Punkte** (oder wird sie defekt gemeldet), kommt ein
+  Push mit der besten Alternative; ein Rückgang von 3/4 auf 2/4 löst nichts aus,
+  ein unbekannter Zustand ebenfalls nicht. Der Text ist fürs Vorlesen gebaut:
+  „Ladeplanner: Gastwerk Hotel Tiefgarage ist belegt. Ausweichen auf
+  Supermarkt-Parkplatz, 550 Meter zum Ziel, einer von zwei Punkten frei,
+  11 Kilowatt." Regeln, Wortlaut und Tabelle: siehe `CLAUDE.md`.
 
 ### Aktivieren (nach dem DB-Setup oben)
 

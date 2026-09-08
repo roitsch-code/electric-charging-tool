@@ -102,8 +102,26 @@ Entscheidungsregeln (`decideWatch`, vollständig getestet in
 | Säule nicht mehr in der Antwort | nein — Datenlücke ≠ belegt |
 | bereits einmal umgeleitet | nein (kein Push-Gewitter im Minutentakt) |
 
-„Belegt" = **null freie Punkte** (`freePoints`, sonst der Status). Nach dem
+„Belegt" = **null freie Punkte** (`freePoints`, sonst der Status). Eine Säule,
+die während der Fahrt **defekt** gemeldet wird, löst denselben Push aus — laden
+kann man dort auch nicht —, heißt im Text aber korrekt „außer Betrieb". Nach dem
 Ausweich-Push ist die Überwachung beendet, der Trip steht auf `diverted`.
+
+**Der Push-Text** (`spokenDiversion` in `chargers/spoken.ts`) wird im Auto
+vorgelesen, also so knapp wie möglich und in der Reihenfolge, in der man ihn
+braucht — was ist los, wohin stattdessen, wie weit zu Fuß, frei, wie schnell:
+
+> Ladeplanner: Gastwerk Hotel Tiefgarage ist belegt. Ausweichen auf
+> Supermarkt-Parkplatz, 550 Meter zum Ziel, einer von zwei Punkten frei,
+> 11 Kilowatt.
+
+Die Alternative wird **namentlich** genannt — ohne Namen weiß man nicht, wohin
+man fährt, und Antippen ist während der Fahrt keine Option (§ 23 Abs. 1a StVO).
+Der Zielname wird nicht wiederholt („550 Meter zum Ziel", nicht „550 Meter vom
+Gastwerk Hotel Hamburg"). Eine Bewertung kommt **nur**, wenn die Alternative
+nicht zum Bedarf passt („Nur Wechselstrom, für den kurzen Halt zu wenig") —
+„Reicht über Nacht" wäre hier Ballast. Ein Test deckelt die Länge bei
+30 Wörtern.
 Fahrten mit überwachter Säule bekommen **keinen** zusätzlichen Ankunfts-Push —
 sonst käme zweimal etwas, obwohl die Säule schon gewählt ist.
 

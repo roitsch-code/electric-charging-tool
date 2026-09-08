@@ -120,7 +120,14 @@ export async function runWatchTick(now = new Date()): Promise<WatchTickResult> {
       // für sich schon handlungsrelevant.
     }
 
-    const msg = buildDiversionMessage(topic, { name: row.name }, alternative, input, destination);
+    // Status mitgeben, damit der Text stimmt: "außer Betrieb" ist nicht "belegt".
+    const msg = buildDiversionMessage(
+      topic,
+      { name: row.name, status: probe?.state.status },
+      alternative,
+      input,
+      destination,
+    );
     let sentOk = false;
     try {
       sentOk = (await sendNtfy(msg)).ok;

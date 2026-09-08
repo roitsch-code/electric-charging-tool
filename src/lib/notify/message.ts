@@ -1,7 +1,6 @@
 import {
   driveToChargerUrl,
-  spokenChargerName,
-  spokenForCharger,
+  spokenDiversion,
   spokenForPlan,
   walkFromChargerUrl,
   type PlanInput,
@@ -9,6 +8,7 @@ import {
   type RankedCharger,
 } from "@/lib/chargers";
 import { haversineMeters } from "@/lib/chargers/geo";
+import type { ChargerStatus } from "@/lib/chargers/types";
 import type { Coordinates } from "@/lib/resolver/types";
 import type { NtfyMessage } from "./ntfy";
 import { SAME_CHARGER_M } from "./watch";
@@ -75,24 +75,21 @@ export function pickAlternative(
 }
 
 /**
- * Push, wenn die angefahrene Säule belegt ist (Notification-Pusher).
- * Sprechsatz nach denselben Regeln wie §6.6: erst was los ist, dann die
- * Alternative mit Gehdistanz — Deeplinks als Buttons fürs stehende Auto.
+ * Push, wenn die angefahrene Säule ausfällt (Notification-Pusher).
+ * Sprechsatz nach §6.6 (siehe spokenDiversion) — Deeplinks als Buttons für
+ * den Fall, dass das Auto steht und Tippen erlaubt ist.
  */
 export function buildDiversionMessage(
   topic: string,
-  target: { name: string },
+  target: { name: string; status?: ChargerStatus },
   alternative: RankedCharger | null,
   input: PlanInput,
   destination: Coordinates & { name?: string },
 ): NtfyMessage {
-  const targetName = spokenChargerName(target.name);
-  const head = `Ladeplanner: ${targetName} ist jetzt belegt.`;
+  const message = spokenDiversion(target, alternative, input);
 
   const actions: NtfyMessage["actions"] = [];
-  let message: string;
   if (alternative) {
-    message = `${head} Alternative: ${spokenForCharger(alternative, destination, input)}`;
     actions.push({
       action: "view",
       label: "Hinfahren",
@@ -103,8 +100,6 @@ export function buildDiversionMessage(
       label: "Zum Ziel",
       url: walkFromChargerUrl(alternative.charger, destination),
     });
-  } else {
-    message = `${head} Keine freie Alternative in Gehdistanz gefunden.`;
   }
 
   return {
