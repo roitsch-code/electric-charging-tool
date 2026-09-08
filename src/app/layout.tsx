@@ -17,9 +17,23 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  applicationName: "Ladeplanner",
   title: "Ladeplanner",
   description:
     "Zielzentrierte Ladeplanung für E-Autos: Laden am Zielort, nicht auf der Autobahn.",
+  // Als Web-App auf dem iPhone-Homescreen: eigenständig (ohne Safari-Leiste),
+  // Name unter dem Icon, durchscheinende Statusleiste (passt zum bestehenden
+  // env(safe-area-inset-top)-Padding in globals.css). Icon (apple-icon.png) und
+  // Favicon (icon.svg) liegen als Datei-Konvention in src/app/ und werden von
+  // Next automatisch verlinkt; das Manifest kommt aus manifest.ts.
+  appleWebApp: {
+    capable: true,
+    title: "Ladeplanner",
+    statusBarStyle: "black-translucent",
+  },
+  // Next 15 gibt nur den modernen "mobile-web-app-capable"-Tag aus; das ältere
+  // Apple-Pendant zusätzlich setzen, damit auch iOS < 16.4 standalone startet.
+  other: { "apple-mobile-web-app-capable": "yes" },
 };
 
 // viewportFit: "cover" ist Voraussetzung, damit env(safe-area-inset-*) greift.
