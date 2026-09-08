@@ -72,11 +72,14 @@ export default function ResultMap({
       LRef.current = L;
 
       const map = L.map(elRef.current, {
-        zoomControl: false, attributionControl: true, scrollWheelZoom: false,
-        doubleClickZoom: false, boxZoom: false, touchZoom: false, keyboard: false,
+        zoomControl: false, attributionControl: true, scrollWheelZoom: true,
+        doubleClickZoom: true, boxZoom: false, touchZoom: true, keyboard: false,
       });
       mapRef.current = map;
       map.attributionControl.setPrefix(false);
+      // Zoom-Buttons dezent unten links (Dark-Style via globals.css); Pinch/Wheel
+      // sind über die Optionen oben aktiv.
+      L.control.zoom({ position: "bottomleft" }).addTo(map);
 
       // Esri „Dark Gray Canvas" (Base, ohne Labels) — dunkel, minimal, keyfrei.
       L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
@@ -100,15 +103,20 @@ export default function ResultMap({
       const pts: [number, number][] = [[dest.lat, dest.lng], ...options.map((o) => [o.lat, o.lng] as [number, number])];
       map.fitBounds(pts, { padding: [46, 46], maxZoom: 16 });
 
-      // Kollisions-Versatz erst, wenn Zoom/Position feststehen.
+      // Kollisions-Versatz hängt vom Zoom ab (Pixelraum) → bei jedem Zoom neu.
+      const applyOffsets = () => {
+        if (cancelled || !mapRef.current) return;
+        offsetsRef.current = computeOffsets(map, dest, options);
+        markersRef.current.forEach((m, i) => m.setIcon(makeIcon(L, options[i]!, i === selRef.current, offsetsRef.current[i]!)));
+      };
       map.whenReady(() => {
         setTimeout(() => {
           if (cancelled || !mapRef.current) return;
-          offsetsRef.current = computeOffsets(map, dest, options);
-          markersRef.current.forEach((m, i) => m.setIcon(makeIcon(L, options[i]!, i === selRef.current, offsetsRef.current[i]!)));
+          applyOffsets();
           map.invalidateSize();
         }, 80);
       });
+      map.on("zoomend", applyOffsets);
     })();
 
     return () => {
