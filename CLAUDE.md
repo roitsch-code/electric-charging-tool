@@ -122,6 +122,25 @@ kein Fußweg):
 > Ladeplanner: Gastwerk Hotel Tiefgarage ist belegt. Keine freie Alternative
 > in Gehdistanz. Navigation stattdessen zum Ziel.
 
+**Standzeit im Sprechtext** — die Kernfrage des Projekts. `spokenStandzeit`
+(`rules/standzeit.ts`) baut aus strukturierten Werten (`StandzeitRule.spoken`:
+`maxHours`, `fromHour`, `toHour`, optional `days`) einen Satz und hängt ihn an:
+
+> … 11 Kilowatt. **Kannst dort drei Stunden stehen.**
+> … 11 Kilowatt. **Kannst dort die Nacht über stehen.**
+
+Maßgeblich ist die **Ankunftszeit** (`trips.eta`), nicht der Prüfzeitpunkt:
+Wer um 19:55 geprüft wird und um 20:10 ankommt, darf die Nacht über stehen.
+Die Stunden werden **zwingend über `Intl` in `Europe/Berlin`** ausgewertet
+(`berlinTime`) — der Container läuft auf UTC, `getHours()` läge im Sommer zwei
+Stunden daneben. Außerhalb der Begrenzung und tagsüber (z. B. sonntags in
+Emmerich) heißt es „Keine zeitliche Begrenzung."
+
+Das `label` bleibt der Anzeigetext („Max. 3 Std (9–20 Uhr) · 20–9 Uhr frei") —
+vorgelesen wäre das Kauderwelsch. **Nur kuratierte Regeln haben `spoken`**;
+für recherchierte Regeln aus der DB und unbekannte Städte wird zur Standzeit
+**nichts gesagt** statt etwas erfunden.
+
 Die Alternative wird **namentlich** genannt — ohne Namen weiß man nicht, wohin
 man fährt, und Antippen ist während der Fahrt keine Option (§ 23 Abs. 1a StVO).
 Der Zielname wird nicht wiederholt („550 Meter zum Ziel", nicht „550 Meter vom

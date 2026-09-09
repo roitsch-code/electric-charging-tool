@@ -43,6 +43,7 @@ interface WatchRow {
   resolved_lat: number | null;
   resolved_lng: number | null;
   resolved_name: string | null;
+  eta: Date | null;
 }
 
 export async function runWatchTick(now = new Date()): Promise<WatchTickResult> {
@@ -66,7 +67,7 @@ export async function runWatchTick(now = new Date()): Promise<WatchTickResult> {
   const rows = await prisma.$queryRaw<WatchRow[]>`
     SELECT w.trip_id, w.evse_id, w.name, w.lat, w.lng, w.status, w.free, w.total,
            w.diversions, t.dwell_minutes, t.return_trip_km,
-           t.resolved_lat, t.resolved_lng, t.resolved_name
+           t.resolved_lat, t.resolved_lng, t.resolved_name, t.eta
     FROM trip_watch w
     JOIN trips t ON t.id = w.trip_id
     WHERE w.done_at IS NULL
@@ -129,12 +130,15 @@ export async function runWatchTick(now = new Date()): Promise<WatchTickResult> {
     }
 
     // Status mitgeben, damit der Text stimmt: "außer Betrieb" ist nicht "belegt".
+    // Fuer die Standzeit zaehlt die ANKUNFT, nicht der Pruefzeitpunkt: Wer um
+    // 19:55 geprueft wird und um 20:10 ankommt, darf die Nacht ueber stehen.
     const msg = buildDiversionMessage(
       topic,
       { name: row.name, status: probe?.state.status },
       alternative,
       input,
       destination,
+      row.eta ?? now,
     );
     let sentOk = false;
     try {

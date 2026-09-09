@@ -86,8 +86,10 @@ export function buildDiversionMessage(
   alternative: RankedCharger | null,
   input: PlanInput,
   destination: Coordinates & { name?: string },
+  /** Ankunftszeit — entscheidet, ob "drei Stunden" oder "die Nacht über". */
+  at: Date = new Date(),
 ): NtfyMessage {
-  const message = spokenDiversion(target, alternative, input);
+  const message = spokenDiversion(target, alternative, input, at);
 
   const actions: NtfyMessage["actions"] = [];
   if (alternative) {
