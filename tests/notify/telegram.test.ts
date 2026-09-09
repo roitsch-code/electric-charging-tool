@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { sendTelegram, telegramFromEnv } from "@/lib/notify/telegram";
+import { sendTelegram, stripAppPrefix, telegramFromEnv } from "@/lib/notify/telegram";
 import { pushTransport } from "@/lib/notify/send";
 import type { NtfyMessage } from "@/lib/notify/ntfy";
 
@@ -39,8 +39,9 @@ describe("sendTelegram", () => {
 
     const body = JSON.parse(String(init!.body)) as Record<string, unknown>;
     expect(body.chat_id).toBe("42");
-    // Der Text ist genau der Sprechsatz — er wird vorgelesen.
-    expect(body.text).toBe(MSG.message);
+    // Siri kuendigt den Absender an ("Ladeplanner") und liest dann den Text —
+    // das Praefix im Text waere doppelt und faellt deshalb weg.
+    expect(body.text).toBe("Parkhaus Ottensen ist belegt. Ausweichen auf Supermarkt-Parkplatz.");
     // Die Links duerfen NICHT im Text stehen (Siri liest sonst die URL mit).
     expect(String(body.text)).not.toContain("http");
 
@@ -77,6 +78,15 @@ describe("sendTelegram", () => {
     );
     expect(res.ok).toBe(false);
     expect(res.status).toBe(401);
+  });
+});
+
+describe("stripAppPrefix", () => {
+  it("entfernt das Praefix, das Siri ohnehin als Absender ansagt", () => {
+    expect(stripAppPrefix("Ladeplanner: Saeule ist belegt.")).toBe("Saeule ist belegt.");
+  });
+  it("laesst Texte ohne Praefix unveraendert", () => {
+    expect(stripAppPrefix("Saeule ist belegt.")).toBe("Saeule ist belegt.");
   });
 });
 

@@ -32,6 +32,17 @@ export function telegramFromEnv(): TelegramConfig | null {
   return botToken && chatId ? { botToken, chatId } : null;
 }
 
+/**
+ * Siri kündigt bei Telegram zuerst den ABSENDER an und liest dann den Text
+ * ("Nachricht von Ladeplanner: …"). Das Präfix im Text wäre damit doppelt.
+ * Voraussetzung: Der Bot heißt "Ladeplanner" (so in @BotFather anlegen).
+ */
+const PREFIX = "Ladeplanner: ";
+
+export function stripAppPrefix(text: string): string {
+  return text.startsWith(PREFIX) ? text.slice(PREFIX.length) : text;
+}
+
 /** Actions -> Inline-Tastatur, eine Reihe mit bis zu zwei Knöpfen. */
 function inlineKeyboard(msg: NtfyMessage): { inline_keyboard: { text: string; url: string }[][] } | undefined {
   if (!msg.actions?.length) return undefined;
@@ -53,7 +64,7 @@ export async function sendTelegram(
       chat_id: config.chatId,
       // Kein Markdown/HTML: der Text wird vorgelesen, Auszeichnung bringt nichts
       // und Sonderzeichen würden nur Escaping-Fehler riskieren.
-      text: msg.message,
+      text: stripAppPrefix(msg.message),
       reply_markup: inlineKeyboard(msg),
     }),
   });

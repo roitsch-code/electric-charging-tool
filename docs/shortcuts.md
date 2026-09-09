@@ -15,7 +15,41 @@ Vercel-Domain.
 
 ---
 
-## 1. Push über ntfy einrichten ✅ (heute)
+## 0. Vorlesen im Auto: Telegram statt ntfy ✅
+
+**Recherchiert und belegt:** iOS liest Benachrichtigungen von Drittanbieter-Apps
+**nur** vor, wenn die App sie als zeitkritisch oder als Direktnachricht
+kennzeichnet ([Apple 102536](https://support.apple.com/en-us/102536)). ntfy tut
+das nicht — die noetigen Berechtigungen sind laut offenem Issue
+[ntfy#1680](https://github.com/binwiederhier/ntfy/issues/1680) im Xcode-Projekt
+gar nicht eingerichtet. **Telegram** unterstuetzt „Mitteilungen ankuendigen"
+seit Ende 2020; seine Nachrichten sind fuer iOS echte Direktnachrichten.
+
+1. Telegram installieren. Dort **@BotFather** anschreiben, `/newbot`, den Bot
+   **„Ladeplanner" nennen** — Siri sagt den Absendernamen an, deshalb kuerzt
+   der Code das Praefix im Text weg (`stripAppPrefix`).
+2. Den eigenen Bot anschreiben und **`/start`** senden, sonst darf er nicht
+   zurueckschreiben.
+3. Chat-ID holen:
+   `curl -s "https://api.telegram.org/bot<TOKEN>/getUpdates"` → `"chat":{"id":…`
+4. `TELEGRAM_BOT_TOKEN` und `TELEGRAM_CHAT_ID` in `/opt/ladeplanner/.env`,
+   dann `docker compose -f docker-compose.cohost.yml up -d`.
+5. Am iPhone: **Einstellungen → Mitteilungen → Mitteilungen ankuendigen** →
+   „Kopfhoerer" an, **Telegram** in der App-Liste an. **Nicht** unter Siri
+   suchen: Auf EU-iPhones fehlt Siri AI unter iOS 27 wegen des DMA, der
+   Menuepunkt aus Apples englischer Anleitung existiert dort nicht.
+6. AirPods rein, **Handy sperren** (Siri kuendigt nichts an, waehrend das
+   Geraet benutzt wird), dann auf dem Server:
+
+```bash
+docker exec ladeplanner-app node -e "fetch('http://localhost:3000/api/notify/test',{headers:{Authorization:'Bearer '+(process.env.CRON_SECRET||'')}}).then(r=>r.json()).then(d=>console.log(JSON.stringify(d)))"
+```
+
+Erwartet: `{"ok":true,"via":"telegram", …}` plus der vorgelesene Satz im Ohr.
+
+---
+
+## 1. Push über ntfy einrichten ✅ (Rückfall, wird NICHT vorgelesen)
 
 1. **ntfy-App** aus dem App Store installieren.
 2. In der App ein **Topic abonnieren** — einen schwer zu erratenden Namen

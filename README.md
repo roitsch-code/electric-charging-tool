@@ -201,9 +201,15 @@ Realtime zeigt die App „Status unbekannt".
   **derselben** Quelle wie der Realtime-Feed — nur so passen die EVSE-IDs
   zusammen (die IDs mischen `BNETZA*…` und echte OCPI-IDs). Für BW ist das die
   realtime-fähige Quelle; BNetzA-CSV/OCM bleiben für Abdeckung ohne Realtime.
-- **Push** (`src/lib/notify/`): `ntfy.ts` (Titel ASCII, deutscher Sprechsatz im
-  Body, Deeplinks als Action-Buttons), `timing.ts` (Vorlauf nach §3:
-  5/10/15 min), `message.ts` (baut Push aus einem Plan).
+- **Push** (`src/lib/notify/`): `send.ts` waehlt den Versandweg —
+  **Telegram** (`telegram.ts`) vor **ntfy** (`ntfy.ts`). Telegram, weil iOS
+  Drittanbieter-Apps nur vorliest, wenn sie als zeitkritisch/Direktnachricht
+  markiert sind; ntfy tut das nicht (Issue binwiederhier/ntfy#1680), Telegram
+  schon. Dazu `timing.ts` (Vorlauf nach §3: 5/10/15 min) und `message.ts`
+  (baut Push aus einem Plan). Einrichtung: siehe `.env.example`.
+  **Zustellung pruefen:** `GET /api/notify/test` schickt einen echten
+  Ausweich-Push ueber den eingerichteten Weg (Seed-Daten, kein API-Kontingent)
+  und meldet zurueck, welcher Weg genutzt wurde und welcher Text rausging.
 - **Cron** (`vercel.json` + `src/app/api/cron/`): `/api/cron/poll` schreibt die
   Verfügbarkeit in die DB (nur zu bekannten Ladepunkten, §5.1);
   `/api/cron/dispatch` verschickt fällige Pushes (`notify_at` erreicht) und

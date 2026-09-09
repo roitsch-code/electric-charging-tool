@@ -1,6 +1,6 @@
 import type { NtfyMessage } from "./ntfy";
 import { sendNtfy } from "./ntfy";
-import { sendTelegram, telegramFromEnv } from "./telegram";
+import { sendTelegram, stripAppPrefix, telegramFromEnv } from "./telegram";
 
 /**
  * Versandweg für Pushes. Telegram hat Vorrang, weil nur dort das Vorlesen im
@@ -19,6 +19,8 @@ export interface SendResult {
   ok: boolean;
   status: number;
   via: Transport | null;
+  /** Der Text, wie er tatsächlich rausging (Telegram kürzt das Präfix). */
+  text: string;
 }
 
 /** Verschickt über den eingerichteten Weg. Ohne Einrichtung: ok = false. */
@@ -26,11 +28,11 @@ export async function sendPush(msg: NtfyMessage): Promise<SendResult> {
   const telegram = telegramFromEnv();
   if (telegram) {
     const r = await sendTelegram(msg, telegram);
-    return { ...r, via: "telegram" };
+    return { ...r, via: "telegram", text: stripAppPrefix(msg.message) };
   }
   if (process.env.NTFY_TOPIC) {
     const r = await sendNtfy(msg);
-    return { ...r, via: "ntfy" };
+    return { ...r, via: "ntfy", text: msg.message };
   }
-  return { ok: false, status: 0, via: null };
+  return { ok: false, status: 0, via: null, text: msg.message };
 }
