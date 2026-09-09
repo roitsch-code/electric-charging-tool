@@ -55,6 +55,8 @@ export async function GET(request: Request) {
       via: result.via,
       status: result.status,
       text: result.text,
+      // Die Standzeit haengt an der Uhrzeit — hier steht, welche gerechnet wurde.
+      zeit: new Date().toLocaleString("de-DE", { timeZone: "Europe/Berlin" }),
       buttons: msg.actions?.map((a) => a.label) ?? [],
     },
     { status: result.ok ? 200 : 502 },
