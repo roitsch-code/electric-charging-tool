@@ -4,7 +4,7 @@ import { planDestination } from "@/lib/chargers";
 import { getChargerSource } from "@/lib/chargers/source-factory";
 import { getAvailabilityProvider } from "@/lib/availability";
 import { buildPushMessage } from "@/lib/notify/message";
-import { sendNtfy } from "@/lib/notify/ntfy";
+import { pushTransport, sendPush } from "@/lib/notify/send";
 import { runWatchTick } from "@/lib/notify/watch-tick";
 import { assertCron } from "../guard";
 
@@ -27,13 +27,18 @@ export async function GET(request: Request) {
   const denied = assertCron(request);
   if (denied) return denied;
 
-  const topic = process.env.NTFY_TOPIC;
-  if (!topic) {
+  if (!pushTransport()) {
     return NextResponse.json(
-      { ok: false, error: "NTFY_TOPIC nicht gesetzt" },
+      {
+        ok: false,
+        error:
+          "Kein Versandweg: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID oder NTFY_TOPIC setzen",
+      },
       { status: 500 },
     );
   }
+  // Nur fuer ntfy relevant; Telegram adressiert ueber die Chat-ID.
+  const topic = process.env.NTFY_TOPIC ?? "";
 
   const now = new Date();
 
@@ -89,7 +94,7 @@ export async function GET(request: Request) {
     // Live-Belegung genau jetzt pruefen (das ist der Sinn des Pushs).
     const plan = await planDestination(coords, input, source, availability);
     const msg = buildPushMessage(topic, plan, input, coords);
-    const result = await sendNtfy(msg);
+    const result = await sendPush(msg);
 
     if (result.ok) {
       await prisma.trip.update({

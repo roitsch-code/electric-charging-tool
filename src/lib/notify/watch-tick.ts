@@ -4,7 +4,7 @@ import { getChargerSource } from "@/lib/chargers/source-factory";
 import { getAvailabilityProvider } from "@/lib/availability";
 import type { ChargerStatus } from "@/lib/chargers/types";
 import { buildDiversionMessage, pickAlternative } from "./message";
-import { sendNtfy } from "./ntfy";
+import { pushTransport, sendPush } from "./send";
 import { ensureTripWatchTable } from "./watch-db";
 import { decideWatch, nextState, probeTarget, type WatchState } from "./watch";
 
@@ -47,10 +47,18 @@ interface WatchRow {
 
 export async function runWatchTick(now = new Date()): Promise<WatchTickResult> {
   const at = now.toISOString();
-  const topic = process.env.NTFY_TOPIC;
-  if (!topic) {
-    return { ok: false, checked: 0, pushed: [], finished: [], skipped: "NTFY_TOPIC nicht gesetzt", at };
+  if (!pushTransport()) {
+    return {
+      ok: false,
+      checked: 0,
+      pushed: [],
+      finished: [],
+      skipped: "Kein Versandweg: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID oder NTFY_TOPIC setzen",
+      at,
+    };
   }
+  // Nur für ntfy relevant; Telegram adressiert über die Chat-ID.
+  const topic = process.env.NTFY_TOPIC ?? "";
 
   await ensureTripWatchTable();
 
@@ -130,7 +138,7 @@ export async function runWatchTick(now = new Date()): Promise<WatchTickResult> {
     );
     let sentOk = false;
     try {
-      sentOk = (await sendNtfy(msg)).ok;
+      sentOk = (await sendPush(msg)).ok;
     } catch {
       sentOk = false;
     }

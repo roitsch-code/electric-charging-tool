@@ -45,10 +45,11 @@ vi.mock("@/lib/notify/watch-db", () => ({
   ensureTripWatchTable: () => Promise.resolve(),
 }));
 
-vi.mock("@/lib/notify/ntfy", () => ({
-  sendNtfy: (msg: NtfyMessage) => {
+vi.mock("@/lib/notify/send", () => ({
+  pushTransport: () => (process.env.NTFY_TOPIC ? "ntfy" : null),
+  sendPush: (msg: NtfyMessage) => {
     sent.messages.push(msg);
-    return Promise.resolve({ ok: sent.ok, status: sent.ok ? 200 : 500 });
+    return Promise.resolve({ ok: sent.ok, status: sent.ok ? 200 : 500, via: "ntfy" });
   },
 }));
 
@@ -158,13 +159,13 @@ describe("runWatchTick — der komplette Durchlauf", () => {
     expect(db.tripUpdates).toHaveLength(0);
   });
 
-  it("ohne NTFY_TOPIC laeuft gar nichts — und sagt das auch", async () => {
+  it("ohne eingerichteten Versandweg laeuft gar nichts — und sagt das auch", async () => {
     delete process.env.NTFY_TOPIC;
     db.rows = [watchRow()];
     const r = await runWatchTick(new Date("2026-09-08T18:00:00Z"));
 
     expect(r.ok).toBe(false);
-    expect(r.skipped).toContain("NTFY_TOPIC");
+    expect(r.skipped).toContain("Versandweg");
     expect(sent.messages).toHaveLength(0);
   });
 

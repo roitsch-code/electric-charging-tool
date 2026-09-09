@@ -137,6 +137,32 @@ bleibt unverändert); `/api/cron/watch` löst ihn einzeln aus, zum Prüfen. Die
 Tabelle `trip_watch` legt die App selbst an (`watch-db.ts`, gleiches Muster wie
 `city_rules`) — **kein** Migrationslauf beim Auto-Deploy nötig.
 
+## Versandweg für Pushes (`notify/send.ts`)
+
+**Telegram hat Vorrang, ntfy ist nur noch Rückfall.** Grund, recherchiert und
+belegt: iOS kündigt Benachrichtigungen von Drittanbieter-Apps **nur** an, wenn
+die App sie als zeitkritisch oder als Direktnachricht kennzeichnet
+([Apple 102536](https://support.apple.com/en-us/102536)). ntfy tut das nicht —
+die nötigen Berechtigungen sind laut offenem Issue
+[ntfy#1680](https://github.com/binwiederhier/ntfy/issues/1680) im Xcode-Projekt
+gar nicht eingerichtet. Telegram unterstützt „Mitteilungen ankündigen" seit
+Ende 2020 als erste Drittanbieter-App; seine Nachrichten sind für iOS echte
+Direktnachrichten.
+
+- Konfiguration: `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` (beide nötig),
+  sonst `NTFY_TOPIC`. Beides fehlt → `pushTransport()` liefert `null`, Cron
+  bricht sauber ab. **Neue Env-Variable auch in die Compose-`environment:`.**
+- Die Deeplinks gehen als **Inline-Tastatur**, nie in den Text — eine URL im
+  Text würde Zeichen für Zeichen mitgesprochen.
+- Einstellung am iPhone: **Einstellungen → Mitteilungen → Mitteilungen
+  ankündigen**, dort „Kopfhörer" und Telegram aktivieren. **Nicht** unter Siri:
+  Auf EU-iPhones fehlt Siri AI unter iOS 27 wegen des DMA
+  ([Apple Newsroom, 6/2026](https://www.apple.com/newsroom/2026/06/due-to-dma-siri-ai-delayed-in-eu-for-ios-27-and-ipados-27/)),
+  der Menüpunkt „Apple Intelligence & Siri" aus Apples englischer Anleitung
+  existiert dort nicht.
+- Vorlesen setzt voraus: Kopfhörer getragen, **Gerät gesperrt**, dunkler
+  Bildschirm. Siri kündigt nichts an, während das Gerät benutzt wird.
+
 ## Favoriten (`Favorites.tsx`)
 
 Zuhause (Ackerstraße 199) · Schwiegereltern (Ingenkampstraße 61, Emmerich) ·
