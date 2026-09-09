@@ -269,6 +269,29 @@ describe("buildDiversionMessage — der vorgelesene Text", () => {
     expect(msg.message).toContain("für den kurzen Halt zu wenig");
   });
 
+  it("sagt die Standzeit der Alternative zur ANKUNFTSZEIT", async () => {
+    const plan = await planDestination(GASTWERK, INPUT);
+    const alt = pickAlternative(plan, plan.top[0]!.charger)!;
+    // Seed-Ladepunkte tragen keine Stadt -> ohne Regel wird nichts gesagt.
+    const ohne = buildDiversionMessage("t", { name: "X", status: "occupied" }, alt, INPUT, GASTWERK);
+    expect(ohne.message).not.toContain("stehen.");
+
+    // Mit Stadt: mittags die Hoechstparkdauer, abends die Nacht.
+    const inHamburg = { ...alt, charger: { ...alt.charger, city: "Hamburg" } };
+    const mittags = buildDiversionMessage(
+      "t", { name: "X", status: "occupied" }, inHamburg, INPUT, GASTWERK,
+      new Date("2026-09-09T12:00:00Z"),
+    );
+    expect(mittags.message).toContain("Kannst dort drei Stunden stehen.");
+
+    const abends = buildDiversionMessage(
+      "t", { name: "X", status: "occupied" }, inHamburg, INPUT, GASTWERK,
+      new Date("2026-09-09T18:30:00Z"),
+    );
+    expect(abends.message).toContain("Kannst dort die Nacht über stehen.");
+    expect(abends.message.split(/\s+/).length).toBeLessThanOrEqual(30);
+  });
+
   it("ohne Alternative: ehrliche Ansage plus was jetzt zu tun ist", () => {
     const msg = buildDiversionMessage(
       "t",

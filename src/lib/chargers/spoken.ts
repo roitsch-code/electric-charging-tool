@@ -1,3 +1,4 @@
+import { cityStandzeit, spokenStandzeit } from "@/lib/rules/standzeit";
 import type { Charger, ChargerStatus, PlanInput, PlanResult, RankedCharger } from "./types";
 
 /**
@@ -136,6 +137,16 @@ function mismatchWarning(top: RankedCharger, input: PlanInput): string | null {
 }
 
 /**
+ * Standzeit-Satz fuer einen Ladepunkt zur ANKUNFTSZEIT ("Kannst dort die Nacht
+ * ueber stehen."). Das ist die Kernfrage des Projekts. Leer, wenn fuer die
+ * Stadt keine strukturierte Regel vorliegt — dann wird nichts erfunden.
+ */
+export function standzeitSentence(charger: Charger, at: Date): string | null {
+  const kind: "ac" | "dc" = charger.connector === "dc" ? "dc" : "ac";
+  return spokenStandzeit(cityStandzeit(charger.city, kind), at);
+}
+
+/**
  * Sprechsatz fuer den Ausweich-Push (Notification-Pusher).
  *
  * Wird im Auto vorgelesen, waehrend gefahren wird — deshalb so knapp wie
@@ -148,6 +159,7 @@ export function spokenDiversion(
   target: { name: string; status?: ChargerStatus },
   alternative: RankedCharger | null,
   input: PlanInput,
+  at: Date = new Date(),
 ): string {
   const head = `Ladeplanner: ${spokenChargerName(target.name)} ${targetProblem(target.status)}.`;
   // Ohne Alternative endet die Ansage nicht in der Sackgasse, sondern sagt,
@@ -163,7 +175,8 @@ export function spokenDiversion(
     `${Math.round(alternative.usablePowerKw)} Kilowatt`,
   ];
   const warn = mismatchWarning(alternative, input);
-  return `${head} ${parts.join(", ")}.${warn ? ` ${warn}` : ""}`;
+  const stand = standzeitSentence(alternative.charger, at);
+  return `${head} ${parts.join(", ")}.${warn ? ` ${warn}` : ""}${stand ? ` ${stand}` : ""}`;
 }
 
 /**
@@ -175,6 +188,7 @@ export function spokenForPlan(
   result: PlanResult,
   input: PlanInput,
   index = 0,
+  at: Date = new Date(),
 ): string | null {
   const top = result.top[index];
   if (!top) {
@@ -192,5 +206,6 @@ export function spokenForPlan(
       )} Kilometern.`
     : "";
 
-  return `Ladeplanner: ${dist}, ${avail}, ${power}. ${verdict}${expandedNote}`;
+  const stand = standzeitSentence(top.charger, at);
+  return `Ladeplanner: ${dist}, ${avail}, ${power}. ${verdict}${stand ? ` ${stand}` : ""}${expandedNote}`;
 }
