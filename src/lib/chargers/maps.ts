@@ -19,9 +19,13 @@ export function driveToChargerUrl(charger: Charger): string {
   return driveToUrl(charger);
 }
 
-/** Fussweg vom Ladepunkt zum eigentlichen Ziel. */
+/**
+ * Fussweg vom Ladepunkt zum eigentlichen Ziel. Nimmt bewusst nur Koordinaten:
+ * Der Startpunkt ist mal ein voller Charger, mal nur die gespeicherte Position
+ * der ueberwachten Saeule — mehr als lat/lng braucht der Link nie.
+ */
 export function walkFromChargerUrl(
-  charger: Charger,
+  charger: Coordinates,
   destination: Coordinates,
 ): string {
   const origin = `${charger.lat},${charger.lng}`;

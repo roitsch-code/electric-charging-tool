@@ -43,6 +43,20 @@ export function ensureTripWatchTable(): Promise<void> {
             FOREIGN KEY ("trip_id") REFERENCES "trips"("id") ON DELETE CASCADE ON UPDATE CASCADE;
         EXCEPTION WHEN duplicate_object THEN NULL; END $$
       `);
+      // Nachgereichte Spalten (Diagnose): Warum hat ein Tick NICHT gepusht?
+      // Ohne das ist "still-free" von "Säule nicht gefunden" nicht zu
+      // unterscheiden — beides sieht von außen nach Stille aus.
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "trip_watch" ADD COLUMN IF NOT EXISTS "last_reason" TEXT`,
+      );
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "trip_watch" ADD COLUMN IF NOT EXISTS "last_error" TEXT`,
+      );
+      // Ankunfts-Push (15 min vor Ankunft, einmal pro Fahrt — auch wenn die
+      // Säule frei ist). Zeitstempel = verschickt, NULL = steht noch aus.
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "trip_watch" ADD COLUMN IF NOT EXISTS "start_push_at" TIMESTAMP(3)`,
+      );
     })().catch((e) => {
       // Beim Fehlschlag Cache leeren, damit ein späterer Aufruf neu versucht.
       tableReady = null;

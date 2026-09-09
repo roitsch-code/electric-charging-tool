@@ -85,6 +85,12 @@ model TripWatch {
   checks     Int      @default(0)
   diversions Int      @default(0)
   lastPushAt DateTime? @map("last_push_at")
+  /// Ankunfts-Push (15 min vor Ankunft, einmal je Fahrt, auch bei freier Säule).
+  startPushAt DateTime? @map("start_push_at")
+  /// Warum der letzte Tick nicht gepusht hat (still-free, unknown, gone …) —
+  /// ohne das ist "alles gut" von "Datenquelle tot" nicht zu unterscheiden.
+  lastReason String?  @map("last_reason")
+  lastError  String?  @map("last_error")
   doneAt     DateTime? @map("done_at")
   doneReason String?  @map("done_reason")
   createdAt  DateTime @default(now()) @map("created_at")

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { runWatchTick } from "@/lib/notify/watch-tick";
+import { recordBeat, recordDenied } from "@/lib/notify/beat";
 import { assertCron } from "../guard";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,15 @@ export const maxDuration = 60;
  */
 export async function GET(request: Request) {
   const denied = assertCron(request);
-  if (denied) return denied;
+  if (denied) {
+    await recordDenied("watch");
+    return denied;
+  }
   const result = await runWatchTick();
+  await recordBeat(
+    "watch",
+    result.ok,
+    result.skipped ?? `geprueft ${result.checked}, gepusht ${result.pushed.length}`,
+  );
   return NextResponse.json(result, { status: result.ok ? 200 : 500 });
 }

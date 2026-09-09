@@ -3,7 +3,7 @@ import { planDestination } from "@/lib/chargers";
 import { getChargerSource } from "@/lib/chargers/source-factory";
 import { getAvailabilityProvider } from "@/lib/availability";
 import type { ChargerStatus } from "@/lib/chargers/types";
-import { buildDiversionMessage, pickAlternative } from "./message";
+import { buildArrivalMessage, buildDiversionMessage, pickAlternative } from "./message";
 import { pushTransport, sendPush } from "./send";
 import { ensureTripWatchTable } from "./watch-db";
 import { decideWatch, nextState, probeTarget, type WatchState } from "./watch";
@@ -38,6 +38,7 @@ interface WatchRow {
   free: number | null;
   total: number | null;
   diversions: number;
+  start_push_at: Date | null;
   dwell_minutes: number | null;
   return_trip_km: number | null;
   resolved_lat: number | null;
@@ -66,7 +67,7 @@ export async function runWatchTick(now = new Date()): Promise<WatchTickResult> {
   // Fällige Überwachungen: im Fenster, noch nicht abgeschlossen.
   const rows = await prisma.$queryRaw<WatchRow[]>`
     SELECT w.trip_id, w.evse_id, w.name, w.lat, w.lng, w.status, w.free, w.total,
-           w.diversions, t.dwell_minutes, t.return_trip_km,
+           w.diversions, w.start_push_at, t.dwell_minutes, t.return_trip_km,
            t.resolved_lat, t.resolved_lng, t.resolved_name, t.eta
     FROM trip_watch w
     JOIN trips t ON t.id = w.trip_id
@@ -89,13 +90,17 @@ export async function runWatchTick(now = new Date()): Promise<WatchTickResult> {
     };
 
     let probe: Awaited<ReturnType<typeof probeTarget>> = null;
+    let probeError: string | null = null;
     try {
       probe = await probeTarget(
         { evseId: row.evse_id, lat: row.lat, lng: row.lng },
         source,
       );
-    } catch {
+    } catch (e) {
       // Abfrage fehlgeschlagen -> wie "unbekannt" behandeln, nächster Tick.
+      // Der Grund wird festgehalten: sonst ist eine tote Datenquelle von
+      // "Säule ist frei" nicht zu unterscheiden (beides = kein Push).
+      probeError = e instanceof Error ? e.message : "probe-failed";
     }
 
     const decision = decideWatch(previous, probe?.state ?? null, {
@@ -103,23 +108,50 @@ export async function runWatchTick(now = new Date()): Promise<WatchTickResult> {
     });
     const updated = nextState(previous, probe?.state ?? null);
 
-    if (!decision.push) {
-      await prisma.$executeRaw`
-        UPDATE trip_watch
-        SET checked_at = ${now}, checks = checks + 1, updated_at = ${now},
-            status = ${updated.status}, free = ${updated.free ?? null}, total = ${updated.total ?? null}
-        WHERE trip_id = ${row.trip_id}
-      `;
-      continue;
-    }
-
-    // Belegt: frische Planung am Ziel, Alternative wählen, Push schicken.
     const destination = {
       lat: row.resolved_lat ?? row.lat,
       lng: row.resolved_lng ?? row.lng,
       name: row.resolved_name ?? undefined,
     };
     const input = { dwellMinutes: row.dwell_minutes, returnTripKm: row.return_trip_km };
+
+    if (!decision.push) {
+      // Erster Tick im Fenster (15 min vor Ankunft): einmal Bescheid geben,
+      // auch wenn alles in Ordnung ist. Ohne diesen Push schweigt die App bei
+      // freier Säule komplett — und Schweigen ist unterwegs nicht von "die
+      // Überwachung läuft gar nicht" zu unterscheiden.
+      let startPushed = false;
+      // Nach einer Umleitung nicht mehr: dort wurde schon alles gesagt.
+      if (!row.start_push_at && row.diversions === 0) {
+        try {
+          startPushed = (
+            await sendPush(
+              buildArrivalMessage(
+                topic,
+                probe?.charger ?? null,
+                { name: row.name, lat: row.lat, lng: row.lng },
+                destination,
+                row.eta ?? now,
+              ),
+            )
+          ).ok;
+        } catch {
+          startPushed = false;
+        }
+        if (startPushed) pushed.push(row.trip_id);
+      }
+      await prisma.$executeRaw`
+        UPDATE trip_watch
+        SET checked_at = ${now}, checks = checks + 1, updated_at = ${now},
+            status = ${updated.status}, free = ${updated.free ?? null}, total = ${updated.total ?? null},
+            last_reason = ${decision.reason}, last_error = ${probeError},
+            start_push_at = COALESCE(start_push_at, ${startPushed ? now : null})
+        WHERE trip_id = ${row.trip_id}
+      `;
+      continue;
+    }
+
+    // Belegt: frische Planung am Ziel, Alternative wählen, Push schicken.
     let alternative = null;
     try {
       const plan = await planDestination(destination, input, source, getAvailabilityProvider());
@@ -155,7 +187,9 @@ export async function runWatchTick(now = new Date()): Promise<WatchTickResult> {
         SET checked_at = ${now}, checks = checks + 1, updated_at = ${now},
             status = ${updated.status}, free = ${updated.free ?? null}, total = ${updated.total ?? null},
             diversions = diversions + 1, last_push_at = ${now},
-            done_at = ${now}, done_reason = ${decision.reason}
+            done_at = ${now}, done_reason = ${decision.reason},
+            last_reason = ${decision.reason}, last_error = NULL,
+            start_push_at = COALESCE(start_push_at, ${now})
         WHERE trip_id = ${row.trip_id}
       `;
       await prisma.trip
@@ -166,7 +200,8 @@ export async function runWatchTick(now = new Date()): Promise<WatchTickResult> {
       // nächste Tick denselben Wechsel erneut erkennt.
       await prisma.$executeRaw`
         UPDATE trip_watch
-        SET checked_at = ${now}, checks = checks + 1, updated_at = ${now}
+        SET checked_at = ${now}, checks = checks + 1, updated_at = ${now},
+            last_reason = 'send-failed', last_error = ${`Versand über ${pushTransport() ?? "?"} fehlgeschlagen`}
         WHERE trip_id = ${row.trip_id}
       `;
     }

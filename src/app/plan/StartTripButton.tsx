@@ -113,25 +113,17 @@ export default function StartTripButton(props: {
     return (
       <div style={{ flex: 1, background: "rgba(95,216,146,0.08)", border: "1px solid rgba(95,216,146,0.22)", borderRadius: 15, padding: "13px 15px" }}>
         <div className="mono" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.05em", color: "var(--free)", textTransform: "uppercase" }}>● Fahrt läuft</div>
-        {state.watchFrom ? (
-          <>
-            <div style={{ fontSize: 13.5, color: "var(--fg)", marginTop: 5 }}>
-              Säule wird ab <strong className="mono">{fmt(state.watchFrom)}</strong> Uhr überwacht · {state.watchLead} min vor Ankunft
-            </div>
-            <div className="mono" style={{ fontSize: 10, color: "var(--faint)", marginTop: 4, textTransform: "uppercase" }}>
-              {state.source === "google" ? "ETA mit Live-Verkehr" : "ETA geschätzt"} · Push nur, wenn sie belegt ist
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{ fontSize: 13.5, color: "var(--fg)", marginTop: 5 }}>
-              Push um <strong className="mono">{fmt(state.notifyAt)}</strong> Uhr · {state.leadMinutes} min vor Ankunft
-            </div>
-            <div className="mono" style={{ fontSize: 10, color: "var(--faint)", marginTop: 4, textTransform: "uppercase" }}>
-              {state.source === "google" ? "ETA mit Live-Verkehr" : "ETA geschätzt"} · Belegung wird vorm Push live geprüft
-            </div>
-          </>
-        )}
+        {/* Zwei Zeilen, nie mehr: die Kachel steht ganz unten im Viewport. */}
+        <div style={{ fontSize: 13.5, color: "var(--fg)", marginTop: 5 }}>
+          Push um <strong className="mono">{fmt(state.watchFrom ?? state.notifyAt)}</strong> Uhr
+          {" · "}
+          {state.watchFrom ? state.watchLead : state.leadMinutes} min vor Ankunft
+        </div>
+        <div className="mono" style={{ fontSize: 10, color: "var(--faint)", marginTop: 4, textTransform: "uppercase" }}>
+          {state.source === "google" ? "ETA mit Live-Verkehr" : "ETA geschätzt"}
+          {" · "}
+          {state.watchFrom ? "Säule wird überwacht" : "Belegung wird live geprüft"}
+        </div>
       </div>
     );
   }

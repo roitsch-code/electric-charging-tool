@@ -69,6 +69,8 @@ function watchRow(over: Record<string, unknown> = {}) {
     free: 2,
     total: 6,
     diversions: 0,
+    // Ankunfts-Push steht noch aus (erster Tick im Fenster).
+    start_push_at: null,
     dwell_minutes: 480,
     return_trip_km: null,
     resolved_lat: 53.551,
@@ -118,29 +120,58 @@ describe("runWatchTick — der komplette Durchlauf", () => {
     });
   });
 
-  it("freie Saeule: kein Push, nur der Zaehler laeuft weiter", async () => {
+  /** Die freie Saeule ist der haeufigste Fall — und der, der frueher stumm blieb. */
+  function freieSaeule(over: Record<string, unknown> = {}) {
     // Schnellladepark Bahrenfeld (Seed): drei von vier frei.
-    db.rows = [
-      watchRow({ evse_id: "DE*SEED*E000002", name: "Schnellladepark Bahrenfeld", lat: 53.5525, lng: 9.9215, free: 4 }),
-    ];
+    return watchRow({
+      evse_id: "DE*SEED*E000002",
+      name: "Schnellladepark Bahrenfeld",
+      lat: 53.5525,
+      lng: 9.9215,
+      free: 4,
+      ...over,
+    });
+  }
+
+  it("freie Saeule, erster Tick: Ankunfts-Push statt Schweigen", async () => {
+    db.rows = [freieSaeule()];
     const r = await runWatchTick(new Date("2026-09-08T18:00:00Z"));
 
-    expect(sent.messages).toHaveLength(0);
-    expect(r.pushed).toEqual([]);
-    expect(r.checked).toBe(1);
-    expect(db.writes.some((w) => w.includes("checks = checks + 1"))).toBe(true);
+    expect(sent.messages).toHaveLength(1);
+    const msg = sent.messages[0]!;
+    expect(msg.message).toContain("Schnellladepark Bahrenfeld ist frei");
+    // Bestaetigung, keine Aufforderung: niedrigere Prioritaet als der Ausweich-Push.
+    expect(msg.priority).toBe(4);
+    expect(r.pushed).toEqual(["trip-1"]);
+    // Die Ueberwachung laeuft weiter — sie ist NICHT beendet.
+    expect(db.writes.some((w) => w.includes("start_push_at"))).toBe(true);
+    expect(db.writes.some((w) => w.includes("done_at"))).toBe(false);
     expect(db.tripUpdates).toHaveLength(0);
   });
 
-  it("Saeule nicht auffindbar: kein Push (Datenluecke ist kein Belegt-Beweis)", async () => {
-    db.rows = [watchRow({ evse_id: "GIBT-ES-NICHT", lat: 0, lng: 0, resolved_lat: 0, resolved_lng: 0 })];
+  it("freie Saeule, spaeterer Tick: kein zweiter Ankunfts-Push", async () => {
+    db.rows = [freieSaeule({ start_push_at: new Date("2026-09-08T17:59:00Z") })];
     const r = await runWatchTick(new Date("2026-09-08T18:00:00Z"));
 
     expect(sent.messages).toHaveLength(0);
     expect(r.pushed).toEqual([]);
+    expect(db.writes.some((w) => w.includes("checks = checks + 1"))).toBe(true);
   });
 
-  it("bereits umgeleitet: kein zweiter Push", async () => {
+  it("Saeule nicht auffindbar: kein Ausweich-Push, aber ehrliche Ansage", async () => {
+    db.rows = [watchRow({ evse_id: "GIBT-ES-NICHT", lat: 0, lng: 0, resolved_lat: 0, resolved_lng: 0 })];
+    const r = await runWatchTick(new Date("2026-09-08T18:00:00Z"));
+
+    // Genau ein Push — und der behauptet nichts, was nicht in den Daten steht.
+    expect(sent.messages).toHaveLength(1);
+    expect(sent.messages[0]!.message).toContain("keine Live-Daten");
+    expect(sent.messages[0]!.message).not.toContain("belegt");
+    expect(r.pushed).toEqual(["trip-1"]);
+    // Kein Abschluss: die Ueberwachung laeuft weiter.
+    expect(db.writes.some((w) => w.includes("done_at"))).toBe(false);
+  });
+
+  it("bereits umgeleitet: kein zweiter Push — auch kein Ankunfts-Push", async () => {
     db.rows = [watchRow({ diversions: 1 })];
     await runWatchTick(new Date("2026-09-08T18:00:00Z"));
     expect(sent.messages).toHaveLength(0);

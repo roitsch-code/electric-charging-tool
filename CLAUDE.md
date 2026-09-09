@@ -21,6 +21,12 @@ stehen?***
   `html,body { height:100dvh; overflow:hidden }` in `globals.css` — nicht
   aufweichen. Breite Inhalte (Tabellen, Karte) scrollen in ihrem eigenen
   Container, nie die Seite.
+  **Genau ein Block darf schrumpfen** — auf der Ergebnis-Seite die Karte
+  (`flex: 0 1 auto`, `minHeight: 132`). Alles andere steht auf `flex: none`;
+  wird der Inhalt unten höher (etwa der „Losfahren"-Knopf, der zur
+  mehrzeiligen „Fahrt läuft"-Kachel wird), gibt die Karte nach. Ohne das
+  wurde die unterste Kachel aus dem Viewport gedrückt und war abgeschnitten
+  — bei `overflow:hidden` ohne jede Scroll-Möglichkeit, also unlesbar.
 - **Nichts halluzinieren.** Belegung, Leistung, Positionen und Standzeit-Regeln
   müssen stimmen oder ehrlich „unbekannt" sein. Regeln nur mit Quelle. Keine
   erfundenen Zahlen; Schätzungen als solche kennzeichnen.
@@ -66,6 +72,7 @@ stehen?***
 | Notification-Pusher (Regeln) | `src/lib/notify/watch.ts` |
 | Notification-Pusher (Durchlauf) | `src/lib/notify/watch-tick.ts`, `watch-db.ts` |
 | Push-Texte / Alternative | `src/lib/notify/message.ts` |
+| Diagnose „warum kam kein Push?" | `src/lib/notify/diagnose.ts`, `beat.ts`, `src/app/api/notify/diag/route.ts` |
 | Cron (Ankunft + Überwachung) | `src/app/api/cron/dispatch/route.ts`, `cron/watch/route.ts` |
 | Startseite + Favoriten | `src/app/page.tsx`, `src/app/Favorites.tsx` |
 | Ergebnis-Seite (Karten, Swipe, Standzeit-Knopf) | `src/app/plan/ResultView.tsx`, `ResultMap.tsx` |
@@ -90,10 +97,24 @@ Säule noch frei ist. Die Säule ist die im Ergebnis-Karussell gewählte; der
 „Losfahren"-Knopf schickt sie als `target` an `POST /api/trips`, das Fenster
 liegt in `trip_watch` (ETA − 15 min bis ETA + 10 min Gnadenfrist).
 
-Entscheidungsregeln (`decideWatch`, vollständig getestet in
-`tests/notify/watch.test.ts`):
+**Beim ersten Tick im Fenster geht IMMER ein Push raus** (`start_push_at`,
+`spokenArrival`) — auch wenn die Säule frei ist:
 
-| Zustandswechsel | Push? |
+> Ladeplanner: Nollenburger Weg 34 ist frei, vier von vier Punkten,
+> 11 Kilowatt. Kannst dort die Nacht über stehen.
+
+Der Grund ist nicht Bequemlichkeit, sondern Unterscheidbarkeit: Ohne diesen
+Satz schweigt die App bei freier Säule komplett, und unterwegs ist Schweigen
+nicht von „die Überwachung läuft gar nicht" zu unterscheiden. Genau daran ist
+die erste echte Fahrt gescheitert. Liegen keine Live-Daten vor, wird nichts
+behauptet, aber auch nicht geschwiegen: „Für X gibt es gerade keine
+Live-Daten. Belegung vor Ort prüfen." Danach läuft die Überwachung normal
+weiter; kippt die Säule später auf belegt, kommt zusätzlich der Ausweich-Push.
+
+Entscheidungsregeln für den **Ausweich**-Push (`decideWatch`, vollständig
+getestet in `tests/notify/watch.test.ts`):
+
+| Zustandswechsel | Ausweich-Push? |
 |---|---|
 | frei → **0 frei** / belegt / defekt | **ja**, mit Alternative |
 | 3/4 frei → 2/4 frei | nein (ist ja noch frei) |
@@ -148,8 +169,33 @@ Gastwerk Hotel Hamburg"). Eine Bewertung kommt **nur**, wenn die Alternative
 nicht zum Bedarf passt („Nur Wechselstrom, für den kurzen Halt zu wenig") —
 „Reicht über Nacht" wäre hier Ballast. Ein Test deckelt die Länge bei
 30 Wörtern.
-Fahrten mit überwachter Säule bekommen **keinen** zusätzlichen Ankunfts-Push —
-sonst käme zweimal etwas, obwohl die Säule schon gewählt ist.
+Fahrten mit überwachter Säule bekommen **keinen** Ankunfts-Push aus
+`/api/cron/dispatch` — ihr Ankunfts-Push kommt aus dem Watch-Durchlauf und
+handelt von der gewählten Säule, nicht von der ganzen Rangliste.
+
+### Wenn kein Push kam
+
+`GET /api/notify/diag` (mit `CRON_SECRET` geschützt) beantwortet in einem
+Aufruf, woran es lag — Versandweg, Cron-Herzschlag, Prüfungen, Push:
+
+```bash
+docker exec ladeplanner-app node -e "fetch('http://localhost:3000/api/notify/diag',{headers:{Authorization:'Bearer '+(process.env.CRON_SECRET||'')}}).then(r=>r.json()).then(d=>console.log(JSON.stringify(d,null,2)))"
+```
+
+Das Feld `befund` steht in Klartext-Sätzen da („Cron läuft (letzter Lauf vor
+41 Sekunden)", „FEHLER: … wurde KEIN einziges Mal geprüft"). Grundlage sind
+zwei Spuren, die es vorher nicht gab und ohne die jede Ursachensuche raten
+muss:
+
+- **`cron_beat`** (`notify/beat.ts`): ein Zeitstempel je Cron-Job — inklusive
+  **abgewiesener** Aufrufe (401). Ein Cron, der wegen falschem `CRON_SECRET`
+  abprallt, sah vorher aus wie gar kein Cron.
+- **`trip_watch.last_reason` / `last_error`**: warum ein Tick nicht gepusht
+  hat (`still-free`, `unknown`, `gone`, `send-failed`) und woran die Abfrage
+  scheiterte. „Säule war frei" und „Datenquelle tot" sehen sonst gleich aus.
+
+Zustellweg allein prüfen (schickt einen echten Push): `GET /api/notify/test`.
+Beide Tabellen legt die App selbst an — kein Migrationslauf beim Deploy.
 
 Der Durchlauf hängt im bestehenden `/api/cron/dispatch` (Minutentakt, ofelia
 bleibt unverändert); `/api/cron/watch` löst ihn einzeln aus, zum Prüfen. Die

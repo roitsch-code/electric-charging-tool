@@ -1,6 +1,7 @@
 import {
   driveToChargerUrl,
   driveToUrl,
+  spokenArrival,
   spokenDiversion,
   spokenForPlan,
   walkFromChargerUrl,
@@ -9,7 +10,7 @@ import {
   type RankedCharger,
 } from "@/lib/chargers";
 import { haversineMeters } from "@/lib/chargers/geo";
-import type { ChargerStatus } from "@/lib/chargers/types";
+import type { Charger, ChargerStatus } from "@/lib/chargers/types";
 import type { Coordinates } from "@/lib/resolver/types";
 import type { NtfyMessage } from "./ntfy";
 import { SAME_CHARGER_M } from "./watch";
@@ -73,6 +74,39 @@ export function pickAlternative(
     return c.status !== "occupied";
   });
   return usable[0] ?? others[0]!;
+}
+
+/**
+ * Push 15 Minuten vor Ankunft, wenn mit der überwachten Säule alles in
+ * Ordnung ist (oder keine Live-Daten vorliegen). Geht EINMAL pro Fahrt raus.
+ *
+ * Der Grund, warum es ihn gibt: Ohne ihn schweigt die App bei freier Säule
+ * komplett — und Schweigen ist unterwegs nicht von "Überwachung läuft gar
+ * nicht" zu unterscheiden. Ein Satz beseitigt die Unsicherheit und ist
+ * zugleich der Beweis, dass die Kette funktioniert.
+ */
+export function buildArrivalMessage(
+  topic: string,
+  charger: Charger | null,
+  target: { name: string; lat: number; lng: number },
+  destination: Coordinates & { name?: string },
+  /** Ankunftszeit — entscheidet, ob "drei Stunden" oder "die Nacht über". */
+  at: Date = new Date(),
+): NtfyMessage {
+  const at2 = { lat: charger?.lat ?? target.lat, lng: charger?.lng ?? target.lng };
+  return {
+    topic,
+    title: "Ladeplanner",
+    message: spokenArrival(charger, target.name, at),
+    tags: ["battery"],
+    // Niedriger als der Ausweich-Push: hier ist nichts zu tun, es ist eine
+    // Bestätigung. Vorgelesen wird sie trotzdem (Telegram = Direktnachricht).
+    priority: 4,
+    actions: [
+      { action: "view", label: "Hinfahren", url: driveToUrl(at2) },
+      { action: "view", label: "Zum Ziel", url: walkFromChargerUrl(at2, destination) },
+    ],
+  };
 }
 
 /**

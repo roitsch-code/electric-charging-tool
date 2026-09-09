@@ -1,4 +1,5 @@
 import { cityStandzeit, spokenStandzeit } from "@/lib/rules/standzeit";
+import { usablePowerOf } from "./rank";
 import type { Charger, ChargerStatus, PlanInput, PlanResult, RankedCharger } from "./types";
 
 /**
@@ -144,6 +145,45 @@ function mismatchWarning(top: RankedCharger, input: PlanInput): string | null {
 export function standzeitSentence(charger: Charger, at: Date): string | null {
   const kind: "ac" | "dc" = charger.connector === "dc" ? "dc" : "ac";
   return spokenStandzeit(cityStandzeit(charger.city, kind), at);
+}
+
+/**
+ * Sprechsatz fuer den Ankunfts-Push der ueberwachten Saeule (15 min vor
+ * Ankunft, EINMAL pro Fahrt — auch wenn alles in Ordnung ist).
+ *
+ * Warum ueberhaupt einer, wenn nichts passiert ist: Schweigen ist im Auto
+ * nicht von "kaputt" zu unterscheiden. Wer losfaehrt und 15 Minuten vor der
+ * Ankunft nichts hoert, weiss nicht, ob die Saeule frei ist oder ob die
+ * Ueberwachung gar nicht laeuft. Ein Satz beseitigt beides.
+ *
+ * @param charger Live gemessener Zustand; null = nicht wiedergefunden.
+ * @param fallbackName Name aus der Ueberwachung, falls `charger` fehlt.
+ */
+export function spokenArrival(
+  charger: Charger | null,
+  fallbackName: string,
+  at: Date = new Date(),
+): string {
+  const name = spokenChargerName(charger?.name ?? fallbackName);
+
+  // Ehrlichkeitsgebot: ohne Live-Daten wird nichts behauptet — aber auch nicht
+  // geschwiegen. Der Fahrer soll wissen, dass er selbst schauen muss.
+  if (!charger || !charger.status || charger.status === "unknown") {
+    return `Ladeplanner: Für ${name} gibt es gerade keine Live-Daten. Belegung vor Ort prüfen.`;
+  }
+
+  const parts = [`${name} ist frei`];
+  if (
+    typeof charger.freePoints === "number" &&
+    typeof charger.totalPoints === "number" &&
+    charger.totalPoints > 1
+  ) {
+    parts.push(`${spellCount(charger.freePoints)} von ${spellCount(charger.totalPoints)} Punkten`);
+  }
+  parts.push(`${Math.round(usablePowerOf(charger))} Kilowatt`);
+
+  const stand = standzeitSentence(charger, at);
+  return `Ladeplanner: ${parts.join(", ")}.${stand ? ` ${stand}` : ""}`;
 }
 
 /**

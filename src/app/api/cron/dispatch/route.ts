@@ -6,6 +6,7 @@ import { getAvailabilityProvider } from "@/lib/availability";
 import { buildPushMessage } from "@/lib/notify/message";
 import { pushTransport, sendPush } from "@/lib/notify/send";
 import { runWatchTick } from "@/lib/notify/watch-tick";
+import { recordBeat, recordDenied } from "@/lib/notify/beat";
 import { assertCron } from "../guard";
 
 export const dynamic = "force-dynamic";
@@ -25,9 +26,15 @@ export const maxDuration = 60;
  */
 export async function GET(request: Request) {
   const denied = assertCron(request);
-  if (denied) return denied;
+  if (denied) {
+    // Abgewiesene Aufrufe festhalten: Ein Cron, der wegen falschem
+    // CRON_SECRET auf 401 läuft, sieht sonst genauso aus wie gar kein Cron.
+    await recordDenied("dispatch");
+    return denied;
+  }
 
   if (!pushTransport()) {
+    await recordBeat("dispatch", false, "kein-versandweg");
     return NextResponse.json(
       {
         ok: false,
@@ -104,6 +111,13 @@ export async function GET(request: Request) {
       sent.push(trip.id);
     }
   }
+
+  await recordBeat(
+    "dispatch",
+    true,
+    `faellig ${due.length}, verschickt ${sent.length}, ueberwacht ${"checked" in watch ? watch.checked : 0}`,
+    now,
+  );
 
   return NextResponse.json({
     ok: true,

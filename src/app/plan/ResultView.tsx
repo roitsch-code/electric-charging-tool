@@ -135,7 +135,7 @@ export default function ResultView({
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, gap: 11 }}>
-      <div style={{ flex: "1 1 auto", minHeight: 8 }} />
+      <div style={{ flex: "1 1 auto", minHeight: 0 }} />
 
       {/* Header — lesbar, klare Hierarchie */}
       <div style={{ flex: "none" }}>
@@ -146,8 +146,12 @@ export default function ResultView({
         </div>
       </div>
 
-      {/* echte, genordete Karte */}
-      <div style={{ flex: "0 0 auto", height: "min(33vh, 258px)", minHeight: 172 }}>
+      {/* Echte, genordete Karte. Sie ist der EINZIGE Block, der schrumpfen
+          darf (flex-shrink 1): Wird der Inhalt darunter höher — etwa wenn der
+          "Losfahren"-Knopf zur mehrzeiligen "Fahrt läuft"-Kachel wird —, gibt
+          die Karte nach, statt die Kachel aus dem Viewport zu drücken.
+          Ohne das wurde sie unten abgeschnitten (kein Seiten-Scroll, CLAUDE.md). */}
+      <div style={{ flex: "0 1 auto", height: "min(33vh, 258px)", minHeight: 132 }}>
         <ResultMap dest={dest} options={options} selected={selected} onSelect={setSelected} />
       </div>
 
