@@ -1,4 +1,5 @@
 import type { Coordinates } from "@/lib/resolver/types";
+import { cityFromAddress } from "@/lib/rules/standzeit";
 import { haversineMeters } from "./geo";
 import type { Charger, ChargerSource } from "./types";
 
@@ -13,7 +14,7 @@ import type { Charger, ChargerSource } from "./types";
  */
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
 
-export const SEED_CHARGERS: Charger[] = [
+const RAW_SEED: Charger[] = [
   // --- Cluster 1: Gastwerk Hotel Hamburg (~53.5510, 9.9215) ---
   {
     evseId: "DE*SEED*E000001",
@@ -114,6 +115,17 @@ export const SEED_CHARGERS: Charger[] = [
     totalPoints: 1,
   },
 ];
+
+/**
+ * Stadt aus der Adresse ableiten — genau wie die TomTom-Quelle es tut. Ohne
+ * das verhaelt sich der Seed anders als die echte Quelle: die Standzeit-Regel
+ * (und damit der Satz "Kannst dort drei Stunden stehen") haengt an der Stadt.
+ * Cluster 1 liegt in Hamburg (kuratierte Regel), Cluster 2 im Emsland (keine).
+ */
+export const SEED_CHARGERS: Charger[] = RAW_SEED.map((c) => ({
+  ...c,
+  city: c.city ?? cityFromAddress(c.address),
+}));
 
 /** In-Memory-Quelle. Gleiche Signatur wie die spaetere PostGIS-Suche (M2). */
 export class SeedChargerSource implements ChargerSource {

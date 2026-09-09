@@ -272,8 +272,9 @@ describe("buildDiversionMessage — der vorgelesene Text", () => {
   it("sagt die Standzeit der Alternative zur ANKUNFTSZEIT", async () => {
     const plan = await planDestination(GASTWERK, INPUT);
     const alt = pickAlternative(plan, plan.top[0]!.charger)!;
-    // Seed-Ladepunkte tragen keine Stadt -> ohne Regel wird nichts gesagt.
-    const ohne = buildDiversionMessage("t", { name: "X", status: "occupied" }, alt, INPUT, GASTWERK);
+    // Stadt ohne kuratierte Regel -> es wird nichts erfunden.
+    const fremd = { ...alt, charger: { ...alt.charger, city: "Kleinkleckersdorf" } };
+    const ohne = buildDiversionMessage("t", { name: "X", status: "occupied" }, fremd, INPUT, GASTWERK);
     expect(ohne.message).not.toContain("stehen.");
 
     // Mit Stadt: mittags die Hoechstparkdauer, abends die Nacht.
