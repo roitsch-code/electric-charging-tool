@@ -77,6 +77,11 @@ export async function GET(request: Request) {
       rank: r.rank,
       evseId: r.charger.evseId,
       name: r.charger.name,
+      // Position und Frei-Zaehler gehoeren in die Antwort: ohne sie kann ein
+      // Client (Kurzbefehl, Skript) keinen `target` fuer die Ueberwachung
+      // bauen — die Koordinaten steckten bisher nur in den Deeplink-URLs.
+      lat: r.charger.lat,
+      lng: r.charger.lng,
       operator: r.charger.operator ?? null,
       connector: r.charger.connector,
       powerKw: r.charger.powerKw,
@@ -85,6 +90,9 @@ export async function GET(request: Request) {
       walkingM: r.walkingM,
       airlineM: r.airlineM,
       status: r.charger.status ?? "unknown",
+      /** Freie / gesamte Punkte; null = keine Live-Belegung (kein Fake). */
+      freePoints: r.charger.freePoints ?? null,
+      totalPoints: r.charger.totalPoints ?? null,
       statusUpdatedAt: r.charger.statusUpdatedAt ?? null,
       score: r.score,
       driveUrl: driveToChargerUrl(r.charger),

@@ -271,7 +271,23 @@ export default function ResultView({
 
       {/* Aktionen für die ausgewählte Option */}
       <div style={{ flex: "none", display: "flex", gap: 9 }}>
-        <StartTripButton destLat={dest.lat} destLng={dest.lng} destName={dest.name} dwellMinutes={dwellMinutes} returnTripKm={returnTripKm} />
+        <StartTripButton
+          destLat={dest.lat}
+          destLng={dest.lng}
+          destName={dest.name}
+          dwellMinutes={dwellMinutes}
+          returnTripKm={returnTripKm}
+          // Die gerade gewählte Säule wird ab 15 min vor Ankunft überwacht.
+          target={{
+            evseId: sel.evseId,
+            name: sel.name,
+            lat: sel.lat,
+            lng: sel.lng,
+            status: sel.status,
+            free: sel.freePoints,
+            total: sel.totalPoints,
+          }}
+        />
         <a className="btn ghost" href={walkFromChargerUrl({ lat: sel.lat, lng: sel.lng } as never, dest)} target="_blank" rel="noopener" style={{ flex: "none", padding: "0 16px" }}>
           Fußweg
         </a>

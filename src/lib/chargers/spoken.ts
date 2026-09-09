@@ -1,4 +1,4 @@
-import type { PlanInput, PlanResult, RankedCharger } from "./types";
+import type { Charger, ChargerStatus, PlanInput, PlanResult, RankedCharger } from "./types";
 
 /**
  * Sprechtext fuer die vorgelesene Push-Mitteilung (Konzept §6.6).
@@ -81,6 +81,89 @@ function assessment(top: RankedCharger, input: PlanInput): string {
     return "Reicht über Nacht.";
   }
   return "Reicht für ein paar Stunden.";
+}
+
+/** Belegungs-Satz fuer EINEN Ladepunkt (nicht die ganze Top-Liste). */
+function chargerAvailabilityPhrase(c: Charger): string {
+  if (c.status === "outoforder") return "außer Betrieb";
+  if (!c.status || c.status === "unknown") return "Belegung unbekannt";
+  if (typeof c.freePoints === "number" && typeof c.totalPoints === "number" && c.totalPoints > 0) {
+    if (c.totalPoints === 1) return c.freePoints > 0 ? "frei" : "belegt";
+    return `${spellCount(c.freePoints)} von ${spellCount(c.totalPoints)} Punkten frei`;
+  }
+  return c.status === "available" ? "frei" : "belegt";
+}
+
+/** Kurzer, sprechbarer Name einer Saeule (bis zum ersten Komma). */
+export function spokenChargerName(name: string | undefined): string {
+  if (!name) return "Die Ladesäule";
+  const head = name.split(",")[0]!.trim();
+  return head || "Die Ladesäule";
+}
+
+/** Was mit der angefahrenen Saeule los ist — knapp und korrekt. */
+function targetProblem(status: ChargerStatus | undefined): string {
+  return status === "outoforder" ? "ist außer Betrieb" : "ist belegt";
+}
+
+/**
+ * Gehdistanz der Alternative, kurz. Der Zielname steht schon im Kontext und
+ * wird deshalb NICHT wiederholt ("550 Meter zum Ziel", nicht "550 Meter vom
+ * Gastwerk Hotel Hamburg") — jedes Wort zaehlt beim Vorlesen.
+ */
+function walkPhrase(top: RankedCharger): string {
+  if (top.charger.atDestination) return "direkt am Ziel";
+  const m = top.walkingM;
+  if (m < 1000) return `${Math.round(m / 10) * 10} Meter zum Ziel`;
+  const km = (m / 1000).toLocaleString("de-DE", { maximumFractionDigits: 1 });
+  return `${km} Kilometer zum Ziel`;
+}
+
+/**
+ * Warnung, wenn die Alternative NICHT zum Bedarf passt. Eine passende
+ * Alternative bekommt bewusst keinen Zusatz: "Reicht über Nacht" ist im
+ * Ausweich-Push Ballast — die Aufenthaltsdauer hat der Fahrer selbst gewaehlt.
+ */
+function mismatchWarning(top: RankedCharger, input: PlanInput): string | null {
+  if (top.charger.connector === "dc") return null;
+  if (input.dwellMinutes !== null && input.dwellMinutes < 60) {
+    return "Nur Wechselstrom, für den kurzen Halt zu wenig.";
+  }
+  if ((input.returnTripKm ?? 0) > 150) {
+    return "Nur Wechselstrom, für die Rückfahrt zu wenig.";
+  }
+  return null;
+}
+
+/**
+ * Sprechsatz fuer den Ausweich-Push (Notification-Pusher).
+ *
+ * Wird im Auto vorgelesen, waehrend gefahren wird — deshalb so knapp wie
+ * moeglich und in der Reihenfolge, in der man es braucht: was ist los, wohin
+ * stattdessen, wie weit zu Fuss, ist dort frei, wie schnell. Die Alternative
+ * wird NAMENTLICH genannt; ohne Namen weiss man nicht, wohin man faehrt, und
+ * Antippen ist waehrend der Fahrt keine Option (§ 23 Abs. 1a StVO, §6.6).
+ */
+export function spokenDiversion(
+  target: { name: string; status?: ChargerStatus },
+  alternative: RankedCharger | null,
+  input: PlanInput,
+): string {
+  const head = `Ladeplanner: ${spokenChargerName(target.name)} ${targetProblem(target.status)}.`;
+  // Ohne Alternative endet die Ansage nicht in der Sackgasse, sondern sagt,
+  // was jetzt zu tun ist: einfach ans Ziel fahren (Knopf dazu in message.ts).
+  if (!alternative) {
+    return `${head} Keine freie Alternative in Gehdistanz. Navigation stattdessen zum Ziel.`;
+  }
+
+  const parts = [
+    `Ausweichen auf ${spokenChargerName(alternative.charger.name)}`,
+    walkPhrase(alternative),
+    chargerAvailabilityPhrase(alternative.charger),
+    `${Math.round(alternative.usablePowerKw)} Kilowatt`,
+  ];
+  const warn = mismatchWarning(alternative, input);
+  return `${head} ${parts.join(", ")}.${warn ? ` ${warn}` : ""}`;
 }
 
 /**

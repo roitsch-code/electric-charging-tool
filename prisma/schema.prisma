@@ -57,10 +57,43 @@ model Trip {
 
   pings           TripPing[]
   recommendations Recommendation[]
+  watch           TripWatch?
 
   @@index([status])
   @@index([notifyAt])
   @@map("trips")
+}
+
+/// Überwachung der angefahrenen Ladesäule (Notification-Pusher).
+/// Ab `watchFrom` (ETA − 15 min) prüft der Minuten-Cron die Live-Belegung;
+/// kippt sie von frei auf belegt (0 frei), geht ein Push mit Alternative raus.
+/// Tabelle wird per raw SQL selbst angelegt (siehe notify/watch-db.ts), damit
+/// der Auto-Deploy keinen Migrationslauf braucht.
+model TripWatch {
+  tripId     String   @id @map("trip_id")
+  evseId     String   @map("evse_id")
+  name       String
+  lat        Float
+  lng        Float
+  /// Zuletzt bekannter Zustand der Säule (Basis für den Vergleich).
+  status     String   @default("unknown")
+  free       Int?
+  total      Int?
+  watchFrom  DateTime @map("watch_from")
+  watchUntil DateTime @map("watch_until")
+  checkedAt  DateTime? @map("checked_at")
+  checks     Int      @default(0)
+  diversions Int      @default(0)
+  lastPushAt DateTime? @map("last_push_at")
+  doneAt     DateTime? @map("done_at")
+  doneReason String?  @map("done_reason")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([watchFrom])
+  @@map("trip_watch")
 }
 
 /// Standort-Ping zur ETA-Korrektur unterwegs (Konzept §6.5).

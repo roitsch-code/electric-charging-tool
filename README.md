@@ -201,13 +201,28 @@ Realtime zeigt die App „Status unbekannt".
   **derselben** Quelle wie der Realtime-Feed — nur so passen die EVSE-IDs
   zusammen (die IDs mischen `BNETZA*…` und echte OCPI-IDs). Für BW ist das die
   realtime-fähige Quelle; BNetzA-CSV/OCM bleiben für Abdeckung ohne Realtime.
-- **Push** (`src/lib/notify/`): `ntfy.ts` (Titel ASCII, deutscher Sprechsatz im
-  Body, Deeplinks als Action-Buttons), `timing.ts` (Vorlauf nach §3:
-  5/10/15 min), `message.ts` (baut Push aus einem Plan).
+- **Push** (`src/lib/notify/`): `send.ts` waehlt den Versandweg —
+  **Telegram** (`telegram.ts`) vor **ntfy** (`ntfy.ts`). Telegram, weil iOS
+  Drittanbieter-Apps nur vorliest, wenn sie als zeitkritisch/Direktnachricht
+  markiert sind; ntfy tut das nicht (Issue binwiederhier/ntfy#1680), Telegram
+  schon. Dazu `timing.ts` (Vorlauf nach §3: 5/10/15 min) und `message.ts`
+  (baut Push aus einem Plan). Einrichtung: siehe `.env.example`.
+  **Zustellung pruefen:** `GET /api/notify/test` schickt einen echten
+  Ausweich-Push ueber den eingerichteten Weg (Seed-Daten, kein API-Kontingent)
+  und meldet zurueck, welcher Weg genutzt wurde und welcher Text rausging.
 - **Cron** (`vercel.json` + `src/app/api/cron/`): `/api/cron/poll` schreibt die
   Verfügbarkeit in die DB (nur zu bekannten Ladepunkten, §5.1);
-  `/api/cron/dispatch` verschickt fällige Pushes (`notify_at` erreicht).
+  `/api/cron/dispatch` verschickt fällige Pushes (`notify_at` erreicht) und
+  fährt im selben Lauf den Notification-Pusher.
   Optionaler Schutz über `CRON_SECRET`.
+- **Notification-Pusher** (`src/lib/notify/watch.ts`, `watch-tick.ts`): ab
+  **15 min vor Ankunft** wird die angefahrene Säule im Minutentakt geprüft.
+  Fällt sie auf **null freie Punkte** (oder wird sie defekt gemeldet), kommt ein
+  Push mit der besten Alternative; ein Rückgang von 3/4 auf 2/4 löst nichts aus,
+  ein unbekannter Zustand ebenfalls nicht. Der Text ist fürs Vorlesen gebaut:
+  „Ladeplanner: Gastwerk Hotel Tiefgarage ist belegt. Ausweichen auf
+  Supermarkt-Parkplatz, 550 Meter zum Ziel, einer von zwei Punkten frei,
+  11 Kilowatt." Regeln, Wortlaut und Tabelle: siehe `CLAUDE.md`.
 
 ### Aktivieren (nach dem DB-Setup oben)
 
@@ -233,6 +248,9 @@ GET /api/plan?lat=..&lng=..&name=..&dwell=..&return=..
   dwell: Minuten ODER Label (kurz | paar | nacht | laenger)
   → 200 { destination, demandClass, usedRadiusM, expanded,
           spokenRecommendation, spokenAlternative, top[] }
+    top[]: rank, evseId, name, lat, lng, operator, connector, powerKw,
+           usablePowerKw, atDestination, walkingM, airlineM, status,
+           freePoints, totalPoints, statusUpdatedAt, score, driveUrl, walkUrl
   → 422 { needsManualInput, placeNameHint, reason }
   Beispiel: /api/plan?lat=53.5510&lng=9.9215&dwell=nacht
 
@@ -249,6 +267,20 @@ POST /api/destinations
 GET /api/destinations/:id
   → 200 { id, lat, lng, name, method, dwellMinutes, returnTripKm,
           status, recommendations }
+
+POST /api/trips
+  { "origin": { "lat": .., "lng": .. },          Startpunkt (Geolocation)
+    "lat": .., "lng": .., "name": "…",           Ziel (auch u | to | q)
+    "dwell": "nacht", "return": 0,
+    "target": { "evseId": "…", "name": "…",      angefahrene Säule (optional)
+                "lat": .., "lng": ..,            → schaltet die Überwachung an
+                "status": "available", "free": 3, "total": 4 } }
+  → 200 { tripId, eta, notifyAt, leadMinutes, distanceKm, etaSource,
+          destination, watch: { from, until, leadMinutes } | null }
+
+GET  /api/cron/watch        Notification-Pusher einzeln auslösen
+  → 200 { ok, checked, pushed[], finished[], at }
+  (derselbe Durchlauf läuft im Minutentakt in /api/cron/dispatch mit)
 
 GET  /api/standzeit?city=<Stadt>&connector=ac|dc
   → 200 { found, origin: "static"|"db", label, verdict, source?, note? }

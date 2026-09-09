@@ -63,6 +63,10 @@ stehen?***
 | Standzeit-Recherche (Agent) | `src/lib/rules/standzeit-research.ts` |
 | Standzeit-Persistenz | `src/lib/rules/standzeit-db.ts` |
 | Standzeit-API | `src/app/api/standzeit/route.ts` |
+| Notification-Pusher (Regeln) | `src/lib/notify/watch.ts` |
+| Notification-Pusher (Durchlauf) | `src/lib/notify/watch-tick.ts`, `watch-db.ts` |
+| Push-Texte / Alternative | `src/lib/notify/message.ts` |
+| Cron (Ankunft + Überwachung) | `src/app/api/cron/dispatch/route.ts`, `cron/watch/route.ts` |
 | Startseite + Favoriten | `src/app/page.tsx`, `src/app/Favorites.tsx` |
 | Ergebnis-Seite (Karten, Swipe, Standzeit-Knopf) | `src/app/plan/ResultView.tsx`, `ResultMap.tsx` |
 | Viewport/No-Scroll-CSS | `src/app/globals.css` |
@@ -78,6 +82,86 @@ stehen?***
   AC-Punkt (× 0,2) unter jeden nutzbaren DC-Punkt gedrückt, bleibt aber
   sichtbar (AC-only-Fall). So schlägt Nähe nicht die Brauchbarkeit.
 - Fahrzeug-Deckelung: nutzbare Leistung bei 135 kW DC / 11 kW AC gekappt.
+
+## Notification-Pusher (`notify/watch.ts`)
+
+Ab **15 Minuten vor Ankunft** prüft der Minuten-Cron, ob die **angefahrene**
+Säule noch frei ist. Die Säule ist die im Ergebnis-Karussell gewählte; der
+„Losfahren"-Knopf schickt sie als `target` an `POST /api/trips`, das Fenster
+liegt in `trip_watch` (ETA − 15 min bis ETA + 10 min Gnadenfrist).
+
+Entscheidungsregeln (`decideWatch`, vollständig getestet in
+`tests/notify/watch.test.ts`):
+
+| Zustandswechsel | Push? |
+|---|---|
+| frei → **0 frei** / belegt / defekt | **ja**, mit Alternative |
+| 3/4 frei → 2/4 frei | nein (ist ja noch frei) |
+| **0 frei**, auch ohne bekannten Vorzustand | **ja** (0 löst immer aus) |
+| Zustand unbekannt (keine Live-Daten) | nein — nichts halluzinieren |
+| Säule nicht mehr in der Antwort | nein — Datenlücke ≠ belegt |
+| bereits einmal umgeleitet | nein (kein Push-Gewitter im Minutentakt) |
+
+„Belegt" = **null freie Punkte** (`freePoints`, sonst der Status). Eine Säule,
+die während der Fahrt **defekt** gemeldet wird, löst denselben Push aus — laden
+kann man dort auch nicht —, heißt im Text aber korrekt „außer Betrieb". Nach dem
+Ausweich-Push ist die Überwachung beendet, der Trip steht auf `diverted`.
+
+**Der Push-Text** (`spokenDiversion` in `chargers/spoken.ts`) wird im Auto
+vorgelesen, also so knapp wie möglich und in der Reihenfolge, in der man ihn
+braucht — was ist los, wohin stattdessen, wie weit zu Fuß, frei, wie schnell:
+
+> Ladeplanner: Gastwerk Hotel Tiefgarage ist belegt. Ausweichen auf
+> Supermarkt-Parkplatz, 550 Meter zum Ziel, einer von zwei Punkten frei,
+> 11 Kilowatt.
+
+Findet sich **keine** Alternative, endet die Ansage nicht in der Sackgasse,
+sondern sagt, was jetzt zu tun ist — mit passendem Knopf (Autofahrt ans Ziel,
+kein Fußweg):
+
+> Ladeplanner: Gastwerk Hotel Tiefgarage ist belegt. Keine freie Alternative
+> in Gehdistanz. Navigation stattdessen zum Ziel.
+
+Die Alternative wird **namentlich** genannt — ohne Namen weiß man nicht, wohin
+man fährt, und Antippen ist während der Fahrt keine Option (§ 23 Abs. 1a StVO).
+Der Zielname wird nicht wiederholt („550 Meter zum Ziel", nicht „550 Meter vom
+Gastwerk Hotel Hamburg"). Eine Bewertung kommt **nur**, wenn die Alternative
+nicht zum Bedarf passt („Nur Wechselstrom, für den kurzen Halt zu wenig") —
+„Reicht über Nacht" wäre hier Ballast. Ein Test deckelt die Länge bei
+30 Wörtern.
+Fahrten mit überwachter Säule bekommen **keinen** zusätzlichen Ankunfts-Push —
+sonst käme zweimal etwas, obwohl die Säule schon gewählt ist.
+
+Der Durchlauf hängt im bestehenden `/api/cron/dispatch` (Minutentakt, ofelia
+bleibt unverändert); `/api/cron/watch` löst ihn einzeln aus, zum Prüfen. Die
+Tabelle `trip_watch` legt die App selbst an (`watch-db.ts`, gleiches Muster wie
+`city_rules`) — **kein** Migrationslauf beim Auto-Deploy nötig.
+
+## Versandweg für Pushes (`notify/send.ts`)
+
+**Telegram hat Vorrang, ntfy ist nur noch Rückfall.** Grund, recherchiert und
+belegt: iOS kündigt Benachrichtigungen von Drittanbieter-Apps **nur** an, wenn
+die App sie als zeitkritisch oder als Direktnachricht kennzeichnet
+([Apple 102536](https://support.apple.com/en-us/102536)). ntfy tut das nicht —
+die nötigen Berechtigungen sind laut offenem Issue
+[ntfy#1680](https://github.com/binwiederhier/ntfy/issues/1680) im Xcode-Projekt
+gar nicht eingerichtet. Telegram unterstützt „Mitteilungen ankündigen" seit
+Ende 2020 als erste Drittanbieter-App; seine Nachrichten sind für iOS echte
+Direktnachrichten.
+
+- Konfiguration: `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` (beide nötig),
+  sonst `NTFY_TOPIC`. Beides fehlt → `pushTransport()` liefert `null`, Cron
+  bricht sauber ab. **Neue Env-Variable auch in die Compose-`environment:`.**
+- Die Deeplinks gehen als **Inline-Tastatur**, nie in den Text — eine URL im
+  Text würde Zeichen für Zeichen mitgesprochen.
+- Einstellung am iPhone: **Einstellungen → Mitteilungen → Mitteilungen
+  ankündigen**, dort „Kopfhörer" und Telegram aktivieren. **Nicht** unter Siri:
+  Auf EU-iPhones fehlt Siri AI unter iOS 27 wegen des DMA
+  ([Apple Newsroom, 6/2026](https://www.apple.com/newsroom/2026/06/due-to-dma-siri-ai-delayed-in-eu-for-ios-27-and-ipados-27/)),
+  der Menüpunkt „Apple Intelligence & Siri" aus Apples englischer Anleitung
+  existiert dort nicht.
+- Vorlesen setzt voraus: Kopfhörer getragen, **Gerät gesperrt**, dunkler
+  Bildschirm. Siri kündigt nichts an, während das Gerät benutzt wird.
 
 ## Favoriten (`Favorites.tsx`)
 
