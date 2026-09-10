@@ -32,6 +32,12 @@ export interface DiagInput {
   beats: Beat[];
   /** Jüngste Überwachungen, neueste zuerst. */
   watches: DiagWatch[];
+  /**
+   * Ohne `CRON_SECRET` aufgerufen: Der Befund bleibt vollständig, aber ohne
+   * Namen von Säulen und Zielen — wo jemand hinfährt, geht niemanden etwas an,
+   * der bloß die URL kennt.
+   */
+  anonym?: boolean;
 }
 
 /** "vor 41 Sekunden" / "vor 3 Minuten" / "vor 2 Stunden" / "vor 4 Tagen". */
@@ -80,7 +86,8 @@ function reasonText(reason: string | null): string {
  */
 export function befund(input: DiagInput): string[] {
   const out: string[] = [];
-  const { now, transport, beats, watches } = input;
+  const { now, transport, beats, watches, anonym } = input;
+  const benenne = (name: string) => (anonym ? "die überwachte Säule" : `„${name}"`);
 
   // 1. Versandweg — ohne den geht gar nichts.
   if (!transport) {
@@ -131,16 +138,16 @@ export function befund(input: DiagInput): string[] {
   const fenster = `${uhr(w.watchFrom)}–${uhr(w.watchUntil)} Uhr`;
   if (w.checks === 0) {
     out.push(
-      `FEHLER: „${w.name}\" (Fenster ${fenster}) wurde KEIN einziges Mal geprüft. ` +
+      `FEHLER: ${benenne(w.name)} (Fenster ${fenster}) wurde KEIN einziges Mal geprüft. ` +
         (w.watchUntil < now
-          ? "Das Fenster ist vorbei — in dieser Zeit hat der Cron nicht gelaufen."
+          ? "Das Fenster ist vorbei — in dieser Zeit hat der Durchlauf nicht stattgefunden."
           : "Das Fenster läuft noch."),
     );
     return out;
   }
 
   out.push(
-    `„${w.name}\": ${w.checks} Prüfungen im Fenster ${fenster}` +
+    `${benenne(w.name)}: ${w.checks} Prüfungen im Fenster ${fenster}` +
       (w.checkedAt ? `, zuletzt ${seit(w.checkedAt, now)}` : "") +
       `. Letzter Befund: ${reasonText(w.lastReason)}.`,
   );

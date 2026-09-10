@@ -22,8 +22,11 @@ export const dynamic = "force-dynamic";
  *   docker exec ladeplanner-app node -e "fetch('http://localhost:3000/api/notify/diag',{headers:{Authorization:'Bearer '+(process.env.CRON_SECRET||'')}}).then(r=>r.json()).then(d=>console.log(JSON.stringify(d,null,2)))"
  */
 export async function GET(request: Request) {
-  const denied = assertCron(request);
-  if (denied) return denied;
+  // Ohne Secret wird NICHT abgewiesen, sondern anonymisiert geantwortet: Der
+  // Befund ist genau dann nützlich, wenn man unterwegs ist und kein Terminal
+  // hat. Preisgegeben werden nur Ja/Nein-Fakten und Zeitstempel — keine Namen
+  // von Säulen oder Zielen, keine Koordinaten, keine Schlüssel.
+  const anonym = assertCron(request) !== null;
 
   const now = new Date();
   const beats = await readBeats();
@@ -81,7 +84,7 @@ export async function GET(request: Request) {
     ok: true,
     zeit: now.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }),
     // Das Wichtigste zuerst: der Befund in Worten.
-    befund: befund({ now, transport, beats, watches }),
+    befund: befund({ now, transport, beats, watches, anonym }),
     versandweg: {
       via: transport,
       telegramToken: !!process.env.TELEGRAM_BOT_TOKEN,
@@ -99,6 +102,7 @@ export async function GET(request: Request) {
       abgewiesen: b.lastDeniedAt?.toISOString() ?? null,
     })),
     tabelle,
-    ueberwachung: watches,
+    // Die Rohdaten (mit Namen und Zielen) nur bei autorisiertem Aufruf.
+    ueberwachung: anonym ? undefined : watches,
   });
 }

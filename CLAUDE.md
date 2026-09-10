@@ -73,6 +73,7 @@ stehen?***
 | Notification-Pusher (Durchlauf) | `src/lib/notify/watch-tick.ts`, `watch-db.ts` |
 | Push-Texte / Alternative | `src/lib/notify/message.ts` |
 | Diagnose „warum kam kein Push?" | `src/lib/notify/diagnose.ts`, `beat.ts`, `src/app/api/notify/diag/route.ts` |
+| Minutentakt der App selbst | `src/instrumentation.ts`, `src/lib/notify/dispatch.ts` |
 | Cron (Ankunft + Überwachung) | `src/app/api/cron/dispatch/route.ts`, `cron/watch/route.ts` |
 | Startseite + Favoriten | `src/app/page.tsx`, `src/app/Favorites.tsx` |
 | Ergebnis-Seite (Karten, Swipe, Standzeit-Knopf) | `src/app/plan/ResultView.tsx`, `ResultMap.tsx` |
@@ -92,10 +93,36 @@ stehen?***
 
 ## Notification-Pusher (`notify/watch.ts`)
 
-Ab **15 Minuten vor Ankunft** prüft der Minuten-Cron, ob die **angefahrene**
-Säule noch frei ist. Die Säule ist die im Ergebnis-Karussell gewählte; der
-„Losfahren"-Knopf schickt sie als `target` an `POST /api/trips`, das Fenster
-liegt in `trip_watch` (ETA − 15 min bis ETA + 10 min Gnadenfrist).
+Vor der Ankunft prüft der Minutentakt, ob die **angefahrene** Säule noch frei
+ist. Die Säule ist die im Ergebnis-Karussell gewählte; der „Losfahren"-Knopf
+schickt sie als `target` an `POST /api/trips`, das Fenster liegt in
+`trip_watch` (Vorlauf bis ETA + 10 min Gnadenfrist).
+
+**Der Takt kommt aus der App selbst** (`src/instrumentation.ts`, Next ruft
+`register()` beim Serverstart): ein `runDispatch()` pro Minute im
+Server-Prozess. Vorher hing jeder Push an drei Teilen außerhalb der App —
+ofelia musste laufen, `docker exec` greifen, und der Authorization-Header die
+INI-, Shell- und curl-Ebene unbeschadet überstehen. Fällt davon etwas aus,
+passiert nichts, ohne dass die App je davon erfährt. `/api/cron/dispatch`
+bleibt als zweiter Weg erreichbar (ofelia unverändert); doppelte Läufe sind
+harmlos, weil jeder Push über eine eigene Spalte abgesichert ist
+(`start_push_at`, `diversions`, `notified_at`). Abschalten mit
+`LADEPLANNER_INTERNAL_CRON=0`.
+
+**Vorlauf nach Restfahrzeit** (`watchLeadMinutes` in `notify/timing.ts`):
+feste 15 Minuten gehen auf Kurzstrecke nicht auf — wer noch zehn Minuten
+fährt, bekäme den Push fünf Minuten *bevor* er losfährt, also nie.
+
+| Restfahrzeit | Push kommt |
+|---|---|
+| ab 25 min | 15 min vor Ankunft |
+| 15–25 min | 10 min vorher |
+| 8–15 min | 5 min vorher |
+| unter 8 min | 3 min vorher |
+
+Zusätzlich gedeckelt auf `Fahrzeit − 1`, damit das Fenster nie vor der
+Abfahrt beginnt. So beantwortet der Push auch auf dem letzten Stück noch die
+eigentliche Frage: *Lohnt es sich, da überhaupt hinzufahren?*
 
 **Beim ersten Tick im Fenster geht IMMER ein Push raus** (`start_push_at`,
 `spokenArrival`) — auch wenn die Säule frei ist:
@@ -175,8 +202,12 @@ handelt von der gewählten Säule, nicht von der ganzen Rangliste.
 
 ### Wenn kein Push kam
 
-`GET /api/notify/diag` (mit `CRON_SECRET` geschützt) beantwortet in einem
-Aufruf, woran es lag — Versandweg, Cron-Herzschlag, Prüfungen, Push:
+`GET /api/notify/diag` beantwortet in einem Aufruf, woran es lag — Versandweg,
+Herzschlag, Prüfungen, Push. **Ohne `CRON_SECRET` antwortet er anonymisiert**
+(Ja/Nein-Fakten und Zeitstempel, aber keine Säulen- und Zielnamen), damit der
+Befund unterwegs im Handy-Browser lesbar ist — genau dann braucht man ihn:
+`https://ladeplaner.markus-reuter.com/api/notify/diag`. Mit Secret kommen die
+Rohdaten dazu:
 
 ```bash
 docker exec ladeplanner-app node -e "fetch('http://localhost:3000/api/notify/diag',{headers:{Authorization:'Bearer '+(process.env.CRON_SECRET||'')}}).then(r=>r.json()).then(d=>console.log(JSON.stringify(d,null,2)))"

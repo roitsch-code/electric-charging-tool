@@ -2,12 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { resolveDestination, parsePlanInput } from "@/lib/planRequest";
 import { computeEta, directionsKeyFromEnv } from "@/lib/notify/eta";
-import {
-  computeNotifyAt,
-  computeWatchWindow,
-  notifyLeadMinutes,
-  WATCH_LEAD_MINUTES,
-} from "@/lib/notify/timing";
+import { computeNotifyAt, computeWatchWindow, notifyLeadMinutes } from "@/lib/notify/timing";
 import { ensureTripWatchTable } from "@/lib/notify/watch-db";
 
 export const dynamic = "force-dynamic";
@@ -105,7 +100,8 @@ export async function POST(request: Request) {
   let watch: { from: string; until: string; leadMinutes: number } | null = null;
   const target = parseTarget(body.target);
   if (target) {
-    const win = computeWatchWindow(etaAt);
+    // Vorlauf richtet sich nach der Restfahrzeit (Kurzstrecke: kurz vorher).
+    const win = computeWatchWindow(etaAt, eta.etaSeconds / 60);
     try {
       await ensureTripWatchTable();
       await prisma.$executeRaw`
@@ -124,7 +120,7 @@ export async function POST(request: Request) {
       watch = {
         from: win.from.toISOString(),
         until: win.until.toISOString(),
-        leadMinutes: WATCH_LEAD_MINUTES,
+        leadMinutes: win.leadMinutes,
       };
     } catch {
       watch = null;
