@@ -6,6 +6,7 @@ import { buildPushMessage } from "./message";
 import { pushTransport, sendPush } from "./send";
 import { runWatchTick } from "./watch-tick";
 import { recordBeat } from "./beat";
+import { nachholGrenze } from "./timing";
 
 /**
  * Ein Durchlauf: überwachte Säulen prüfen + fällige Ankunfts-Pushes schicken.
@@ -23,6 +24,8 @@ export interface DispatchResult {
   due: number;
   sent: string[];
   watched: string[];
+  /** Fahrten, die zu lange zurücklagen und still abgeschlossen wurden. */
+  expired?: number;
   watch?: unknown;
   at: string;
 }
@@ -54,11 +57,23 @@ export async function runDispatch(now = new Date()): Promise<DispatchResult> {
   }
 
   // 2. Ankunfts-Push fuer Fahrten ohne ausgewaehlte Saeule.
+  // Nur was noch aktuell ist: Laengst vergangene Fahrten werden still
+  // abgeschlossen, nicht nachgemeldet (siehe NACHHOLFRIST_MINUTES).
+  const grenze = nachholGrenze(now);
+  const veraltet = await prisma.trip.updateMany({
+    where: {
+      status: { in: ["planned", "driving"] },
+      notifiedAt: null,
+      notifyAt: { not: null, lt: grenze },
+    },
+    data: { status: "done" },
+  });
+
   const due = await prisma.trip.findMany({
     where: {
       status: { in: ["planned", "driving"] },
       notifiedAt: null,
-      notifyAt: { not: null, lte: now },
+      notifyAt: { not: null, lte: now, gte: grenze },
       resolvedLat: { not: null },
       resolvedLng: { not: null },
     },
@@ -106,9 +121,18 @@ export async function runDispatch(now = new Date()): Promise<DispatchResult> {
   await recordBeat(
     "dispatch",
     true,
-    `faellig ${due.length}, verschickt ${sent.length}, ueberwacht ${"checked" in watch ? watch.checked : 0}`,
+    `faellig ${due.length}, verschickt ${sent.length}, ueberwacht ${"checked" in watch ? watch.checked : 0}` +
+      (veraltet.count > 0 ? `, ${veraltet.count} veraltet verworfen` : ""),
     now,
   );
 
-  return { ok: true, due: due.length, sent, watched: [...watched], watch, at };
+  return {
+    ok: true,
+    due: due.length,
+    sent,
+    watched: [...watched],
+    expired: veraltet.count,
+    watch,
+    at,
+  };
 }

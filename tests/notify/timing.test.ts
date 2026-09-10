@@ -2,8 +2,10 @@ import { describe, it, expect } from "vitest";
 import {
   computeNotifyAt,
   computeWatchWindow,
+  nachholGrenze,
   notifyLeadMinutes,
   watchLeadMinutes,
+  NACHHOLFRIST_MINUTES,
 } from "@/lib/notify/timing";
 
 describe("notifyLeadMinutes (Konzept §3)", () => {
@@ -76,6 +78,27 @@ describe("computeWatchWindow", () => {
     const abfahrt = new Date(eta.getTime() - 6 * 60_000);
     const w = computeWatchWindow(eta, 6);
     expect(w.from.getTime()).toBeGreaterThan(abfahrt.getTime());
+  });
+});
+
+describe("nachholGrenze — verpasste Pushes nachholen, aber nicht ewig", () => {
+  const now = new Date("2026-09-10T09:34:00Z");
+
+  it("ein kurz verpasster Push wird nachgeholt", () => {
+    // Zehn Minuten alt: noch aktuell, der Fahrer ist unterwegs.
+    const notifyAt = new Date(now.getTime() - 10 * 60_000);
+    expect(notifyAt >= nachholGrenze(now)).toBe(true);
+  });
+
+  it("die Fahrt von gestern wird NICHT nachgemeldet", () => {
+    // Genau das ist passiert, als der interne Takt zum ersten Mal lief:
+    // vier alte Fahrten auf einmal.
+    const gestern = new Date(now.getTime() - 14 * 3600_000);
+    expect(gestern >= nachholGrenze(now)).toBe(false);
+  });
+
+  it("die Grenze liegt eine halbe Stunde zurück", () => {
+    expect(now.getTime() - nachholGrenze(now).getTime()).toBe(NACHHOLFRIST_MINUTES * 60_000);
   });
 });
 

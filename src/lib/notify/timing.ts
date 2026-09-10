@@ -18,6 +18,22 @@ export function computeNotifyAt(eta: Date, totalDistanceKm: number): Date {
 }
 
 /**
+ * Wie lange ein fälliger Ankunfts-Push noch nachgeholt werden darf.
+ *
+ * War die App (oder der Takt) eine Weile aus, sollen die verpassten Pushes
+ * nachkommen — aber nur, solange sie noch stimmen. Ein "du kommst gleich an"
+ * für eine Fahrt von gestern ist keine Information, sondern Lärm: Beim ersten
+ * Lauf des internen Takts gingen vier solche Nachrichten auf einmal raus.
+ * Ältere Fahrten werden deshalb still abgeschlossen statt gemeldet.
+ */
+export const NACHHOLFRIST_MINUTES = 30;
+
+/** Früheste `notify_at`-Zeit, die jetzt noch einen Push wert ist. */
+export function nachholGrenze(now: Date): Date {
+  return new Date(now.getTime() - NACHHOLFRIST_MINUTES * 60_000);
+}
+
+/**
  * Überwachung der angefahrenen Ladesäule (Notification-Pusher):
  * ab `watchLeadMinutes` vor Ankunft im Minutentakt prüfen, ob sie noch frei
  * ist. Nach der ETA läuft die Überwachung noch eine Gnadenfrist weiter, weil
