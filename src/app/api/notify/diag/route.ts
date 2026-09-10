@@ -83,6 +83,9 @@ export async function GET(request: Request) {
   return NextResponse.json({
     ok: true,
     zeit: now.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }),
+    // Wann dieser Stand gebaut wurde — damit erkennbar ist, ob ein Deploy
+    // wirklich durch ist (siehe next.config.mjs).
+    stand: process.env.LADEPLANNER_BUILD ?? "unbekannt",
     // Das Wichtigste zuerst: der Befund in Worten.
     befund: befund({ now, transport, beats, watches, anonym }),
     versandweg: {
